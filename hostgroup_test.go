@@ -32,8 +32,8 @@ func TestGetInvalidHostgroup(t *testing.T) {
 func TestCreateHostGroup(t *testing.T) {
 
 	name := "docker-servers"
-
-	err := VagrantImage.CreateHostgroup(name)
+	displayName := "Docker Host Servers"
+	err := VagrantImage.CreateHostgroup(name, displayName)
 
 	if err != nil {
 		t.Errorf("Error : Failed to create hostgroup %s : %s", name, err)
@@ -41,23 +41,23 @@ func TestCreateHostGroup(t *testing.T) {
 
 }
 
-/*
-func TestDeleteHost(t *testing.T) {
+func TestDeleteHostgroup(t *testing.T) {
 
-	hostname := "go-icinga2-api-1"
+	name := "docker-servers"
 
-	err := VagrantImage.DeleteHost(hostname)
+	err := VagrantImage.DeleteHostgroup(name)
 	if err != nil {
-		t.Errorf("Error : Failed to delete %s : %s", hostname, err)
+		t.Errorf("Error : Failed to delete hostgroup %s : %s", name, err)
 	}
 
 }
 
-func TestDeleteNonExistentHost(t *testing.T) {
-	hostname := "go-icinga2-api-1"
-	err := VagrantImage.DeleteHost(hostname)
+func TestDeleteNonExistentHostGroup(t *testing.T) {
+
+	name := "docker-servers"
+	err := VagrantImage.DeleteHostgroup(name)
 	if err != nil {
-		t.Errorf("Error : Failed to delete %s : %s", hostname, err)
+		t.Errorf("Error : Failed to delete hostgroup %s : %s", name, err)
 	}
 
-} */
+}
