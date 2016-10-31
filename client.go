@@ -1,8 +1,4 @@
 // Package icinga2 provides a client for interacting with an Icinga2 Server
-
-// New ... client = Client('https://localhost:5665','username','passowrd')
-//https: //Aladdin:OpenSesame@www.example.com/index.html This method may not work in all browsers.
-
 package icinga2
 
 import (
@@ -22,6 +18,7 @@ type Server struct {
 	httpClient         *http.Client
 }
 
+// func config ...
 func (server *Server) config(username, password, url string, AllowUnverifiedSSL bool) (*Server, error) {
 
 	// TODO : Add code to verify parameters

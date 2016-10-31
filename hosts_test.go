@@ -33,11 +33,30 @@ func TestCreateSimpleHost(t *testing.T) {
 	hostname := "go-icinga2-api-1"
 	IPAddress := "127.0.0.2"
 	CheckCommand := "CheckItRealGood"
-	err := VagrantImage.CreateHost(hostname, IPAddress, CheckCommand)
+	err := VagrantImage.CreateHost(hostname, IPAddress, CheckCommand, nil)
 
 	if err != nil {
-		t.Errorf("Error : Failed to create %s : %s", hostname, err)
+		t.Errorf("Error : Failed to create host %s : %s", hostname, err)
 	}
+
+}
+
+func TestCreateHostWithVariables(t *testing.T) {
+
+	hostname := "go-icinga2-api-2"
+	IPAddress := "127.0.0.3"
+	CheckCommand := "CheckItRealGood"
+	variables := make(map[string]string)
+
+	variables["vars.os"] = "Linux"
+	variables["vars.creator"] = "Terraform"
+
+	err := VagrantImage.CreateHost(hostname, IPAddress, CheckCommand, variables)
+	if err != nil {
+		t.Errorf("Error : Failed to create host %s : %s", hostname, err)
+	}
+
+	_ = VagrantImage.DeleteHost(hostname)
 
 }
 

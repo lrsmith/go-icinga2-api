@@ -32,23 +32,27 @@ func (server *Server) GetHost(hostname string) ([]HostStruct, error) {
 }
 
 // CreateHost ...
-func (server *Server) CreateHost(hostname, address, checkCommand string) error {
+func (server *Server) CreateHost(hostname, address, checkCommand string, variables map[string]string) error {
 
 	var newAttrs HostAttrs
-	newAttrs.Address = "address"
+	newAttrs.Address = address
 	newAttrs.CheckCommand = "hostalive"
+	newAttrs.Vars = variables
 
 	var newHost HostStruct
 	newHost.Name = hostname
 	newHost.Type = "Host"
 	newHost.Attrs = newAttrs
 
+	// Create JSON from completed struct
 	payloadJSON, marshalErr := json.Marshal(newHost)
 	if marshalErr != nil {
 		return marshalErr
 	}
 
-	// fmt.Printf("%s", payloadJSON)
+	//fmt.Printf("<payload> %s\n", payloadJSON)
+
+	// Make the API request to create the hosts.
 	results, err := server.NewAPIRequest("PUT", "/objects/hosts/"+hostname, []byte(payloadJSON))
 	if err != nil {
 		return err
@@ -57,6 +61,7 @@ func (server *Server) CreateHost(hostname, address, checkCommand string) error {
 	if results.Code == 200 {
 		return nil
 	}
+
 	// TODO Parse results.Results to get error messag
 	return errors.New(results.Status)
 
