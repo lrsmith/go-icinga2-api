@@ -56,8 +56,11 @@ func TestCreateHostWithVariables(t *testing.T) {
 		t.Errorf("Error : Failed to create host %s : %s", hostname, err)
 	}
 
-	_ = VagrantImage.DeleteHost(hostname)
-
+	// Delete host after creating it.
+	deleteErr := VagrantImage.DeleteHost(hostname)
+	if deleteErr != nil {
+		t.Errorf("Error : Cleanup failed for host %s : %s", hostname, err)
+	}
 }
 
 func TestDeleteHost(t *testing.T) {
