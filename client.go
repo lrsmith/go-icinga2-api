@@ -1,5 +1,5 @@
 // Package icinga2 provides a client for interacting with an Icinga2 Server
-package icinga2
+package icinga2api
 
 import (
 	"bytes"
@@ -19,14 +19,14 @@ type Server struct {
 }
 
 // func config ...
-func (server *Server) config(username, password, url string, AllowUnverifiedSSL bool) (*Server, error) {
+func (server *Server) Config(username, password, url string, AllowUnverifiedSSL bool) (*Server, error) {
 
 	// TODO : Add code to verify parameters
 	return &Server{username, password, url, AllowUnverifiedSSL, nil}, nil
 
 }
 
-func (server *Server) connect() error {
+func (server *Server) Connect() error {
 
 	t := &http.Transport{
 		TLSClientConfig: &tls.Config{

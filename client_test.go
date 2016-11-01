@@ -1,4 +1,4 @@
-package icinga2
+package icinga2api
 
 import "testing"
 
@@ -7,7 +7,7 @@ var VagrantImageBadPassword = Server{"root", "icinga2", "https://192.168.33.5:56
 
 func TestConnect(t *testing.T) {
 
-	VagrantImage.connect()
+	VagrantImage.Connect()
 
 	if VagrantImage.httpClient == nil {
 		t.Errorf("Failed to succesfull connect to Icinga Server")
@@ -16,7 +16,7 @@ func TestConnect(t *testing.T) {
 
 func TestConnectWithBadCredential(t *testing.T) {
 
-	VagrantImageBadPassword.connect()
+	VagrantImageBadPassword.Connect()
 	if VagrantImageBadPassword.httpClient != nil {
 		t.Errorf("Did not fail with bad credentials")
 	}

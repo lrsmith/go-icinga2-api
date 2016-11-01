@@ -1,4 +1,4 @@
-package icinga2
+package icinga2api
 
 /*
 Currently to get something working and that can be refactored there is a lot of duplicate and overlapping decleration. In

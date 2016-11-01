@@ -1,4 +1,4 @@
-package icinga2
+package icinga2api
 
 import (
 	"encoding/json"
