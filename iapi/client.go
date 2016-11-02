@@ -11,10 +11,10 @@ import (
 
 // Server ... Use to be ClientConfig
 type Server struct {
-	username           string
-	password           string
-	baseURL                string
-	allowUnverifiedSSL bool
+	Username           string
+	Password           string
+	BaseURL                string
+	AllowUnverifiedSSL bool
 	httpClient         *http.Client
 }
 
@@ -30,7 +30,7 @@ func (server *Server) Connect() error {
 
 	t := &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: server.allowUnverifiedSSL,
+			InsecureSkipVerify: server.AllowUnverifiedSSL,
 		},
 	}
 
@@ -38,12 +38,12 @@ func (server *Server) Connect() error {
 		Transport: t,
 	}
 
-	request, err := http.NewRequest("GET", server.baseURL, nil)
+	request, err := http.NewRequest("GET", server.BaseURL, nil)
 	if err != nil {
 		server.httpClient = nil
 	}
 
-	request.SetBasicAuth(server.username, server.password)
+	request.SetBasicAuth(server.Username, server.Password)
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Content-Type", "application/json")
 
@@ -52,7 +52,7 @@ func (server *Server) Connect() error {
 
 	if (err != nil) || (response.StatusCode != 200) {
 		server.httpClient = nil
-		fmt.Printf("Failed to connect to %s : %s\n", server.baseURL, response.Status)
+		fmt.Printf("Failed to connect to %s : %s\n", server.BaseURL, response.Status)
 		return err
 	}
 
@@ -63,11 +63,11 @@ func (server *Server) Connect() error {
 // NewAPIRequest ...
 func (server *Server) NewAPIRequest(method, APICall string, jsonString []byte) (*APIResult, error) {
 
-	fullURL := server.baseURL + APICall
+	fullURL := server.BaseURL + APICall
 
 	t := &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: server.allowUnverifiedSSL,
+			InsecureSkipVerify: server.AllowUnverifiedSSL,
 		},
 	}
 
@@ -80,7 +80,7 @@ func (server *Server) NewAPIRequest(method, APICall string, jsonString []byte) (
 		return nil, requestErr
 	}
 
-	request.SetBasicAuth(server.username, server.password)
+	request.SetBasicAuth(server.Username, server.Password)
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Content-Type", "application/json")
 
