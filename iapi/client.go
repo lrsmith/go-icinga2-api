@@ -1,5 +1,5 @@
-// Package icinga2 provides a client for interacting with an Icinga2 Server
-package icinga2api
+// Package iapi provides a client for interacting with an Icinga2 Server
+package iapi
 
 import (
 	"bytes"
@@ -13,16 +13,16 @@ import (
 type Server struct {
 	username           string
 	password           string
-	URL                string
-	AllowUnverifiedSSL bool
+	baseURL                string
+	allowUnverifiedSSL bool
 	httpClient         *http.Client
 }
 
-// func config ...
-func (server *Server) Config(username, password, url string, AllowUnverifiedSSL bool) (*Server, error) {
+// func Config ...
+func (server *Server) Config(username, password, url string, allowUnverifiedSSL bool) (*Server, error) {
 
 	// TODO : Add code to verify parameters
-	return &Server{username, password, url, AllowUnverifiedSSL, nil}, nil
+	return &Server{username, password, url, allowUnverifiedSSL, nil}, nil
 
 }
 
@@ -30,7 +30,7 @@ func (server *Server) Connect() error {
 
 	t := &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: server.AllowUnverifiedSSL,
+			InsecureSkipVerify: server.allowUnverifiedSSL,
 		},
 	}
 
@@ -38,7 +38,7 @@ func (server *Server) Connect() error {
 		Transport: t,
 	}
 
-	request, err := http.NewRequest("GET", server.URL, nil)
+	request, err := http.NewRequest("GET", server.baseURL, nil)
 	if err != nil {
 		server.httpClient = nil
 	}
@@ -52,7 +52,7 @@ func (server *Server) Connect() error {
 
 	if (err != nil) || (response.StatusCode != 200) {
 		server.httpClient = nil
-		fmt.Printf("Failed to connect to %s : %s\n", server.URL, response.Status)
+		fmt.Printf("Failed to connect to %s : %s\n", server.baseURL, response.Status)
 		return err
 	}
 
@@ -63,11 +63,11 @@ func (server *Server) Connect() error {
 // NewAPIRequest ...
 func (server *Server) NewAPIRequest(method, APICall string, jsonString []byte) (*APIResult, error) {
 
-	fullURL := server.URL + APICall
+	fullURL := server.baseURL + APICall
 
 	t := &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: server.AllowUnverifiedSSL,
+			InsecureSkipVerify: server.allowUnverifiedSSL,
 		},
 	}
 

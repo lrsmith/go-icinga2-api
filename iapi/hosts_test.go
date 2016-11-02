@@ -1,4 +1,4 @@
-package icinga2api
+package iapi
 
 import "testing"
 
