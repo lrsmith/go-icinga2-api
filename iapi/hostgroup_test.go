@@ -1,5 +1,4 @@
 package iapi
-
 import "testing"
 
 func TestGetValidHostgroup(t *testing.T) {

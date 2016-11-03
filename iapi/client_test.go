@@ -1,5 +1,4 @@
 package iapi
-
 import "testing"
 
 var VagrantImage = Server{"root", "icinga", "https://192.168.33.5:5665/v1", true, nil}

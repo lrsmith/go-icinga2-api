@@ -1,5 +1,4 @@
 package iapi
-
 import "testing"
 
 func TestGetValidHost(t *testing.T) {
