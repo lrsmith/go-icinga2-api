@@ -1,4 +1,5 @@
 package iapi
+
 import "testing"
 
 func TestGetValidHost(t *testing.T) {
@@ -11,8 +12,8 @@ func TestGetValidHost(t *testing.T) {
 		t.Errorf("Error : Failed to find %s : ( %s <> %s ) ", hostname, err, host)
 	}
 
-	if host[0].Name != hostname {
-		t.Errorf("Error : Did not get expected hostname. ( %s != %s )", host[0].Name, hostname)
+	if host.Name != hostname {
+		t.Errorf("Error : Did not get expected hostname. ( %s != %s )", host.Name, hostname)
 	}
 
 }
@@ -21,7 +22,7 @@ func TestGetInvalidHost(t *testing.T) {
 
 	hostname := "c2-mysql-1"
 	host, err := VagrantImage.GetHost(hostname)
-	if (err != nil) || (len(host) != 0) {
+	if err != nil {
 		t.Errorf("Error : Did not get empty list. ( %v : %s )", err, host)
 	}
 
@@ -32,7 +33,7 @@ func TestCreateSimpleHost(t *testing.T) {
 	hostname := "go-icinga2-api-1"
 	IPAddress := "127.0.0.2"
 	CheckCommand := "CheckItRealGood"
-	err := VagrantImage.CreateHost(hostname, IPAddress, CheckCommand, nil)
+	_, err := VagrantImage.CreateHost(hostname, IPAddress, CheckCommand, nil)
 
 	if err != nil {
 		t.Errorf("Error : Failed to create host %s : %s", hostname, err)
@@ -50,7 +51,7 @@ func TestCreateHostWithVariables(t *testing.T) {
 	variables["vars.os"] = "Linux"
 	variables["vars.creator"] = "Terraform"
 
-	err := VagrantImage.CreateHost(hostname, IPAddress, CheckCommand, variables)
+	_, err := VagrantImage.CreateHost(hostname, IPAddress, CheckCommand, variables)
 	if err != nil {
 		t.Errorf("Error : Failed to create host %s : %s", hostname, err)
 	}

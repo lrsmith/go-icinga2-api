@@ -6,7 +6,7 @@ import (
 )
 
 // GetHost ...
-func (server *Server) GetHost(hostname string) ([]HostStruct, error) {
+func (server *Server) GetHost(hostname string) (*HostStruct, error) {
 
 	results, err := server.NewAPIRequest("GET", "/objects/hosts/"+hostname, nil)
 	if err != nil {
@@ -27,12 +27,16 @@ func (server *Server) GetHost(hostname string) ([]HostStruct, error) {
 		return nil, unmarshalErr
 	}
 
-	return host, err
+	if len(host) != 1 {
+		return nil, errors.New("Found more than one matching host.")
+	}
+
+	return &host[0], err
 
 }
 
 // CreateHost ...
-func (server *Server) CreateHost(hostname, address, checkCommand string, variables map[string]string) error {
+func (server *Server) CreateHost(hostname, address, checkCommand string, variables map[string]string) (*HostStruct, error) {
 
 	var newAttrs HostAttrs
 	newAttrs.Address = address
@@ -47,7 +51,7 @@ func (server *Server) CreateHost(hostname, address, checkCommand string, variabl
 	// Create JSON from completed struct
 	payloadJSON, marshalErr := json.Marshal(newHost)
 	if marshalErr != nil {
-		return marshalErr
+		return nil, marshalErr
 	}
 
 	//fmt.Printf("<payload> %s\n", payloadJSON)
@@ -55,15 +59,16 @@ func (server *Server) CreateHost(hostname, address, checkCommand string, variabl
 	// Make the API request to create the hosts.
 	results, err := server.NewAPIRequest("PUT", "/objects/hosts/"+hostname, []byte(payloadJSON))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if results.Code == 200 {
-		return nil
+		theHost, err := server.GetHost(hostname)
+		return theHost, err
 	}
 
 	// TODO Parse results.Results to get error messag
-	return errors.New(results.Status)
+	return nil, errors.New(results.Status)
 
 }
 
