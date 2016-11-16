@@ -53,7 +53,7 @@ func (server *Server) CreateHostgroup(name, displayName string) (*HostgroupStruc
 	}
 
 	if results.Code == 200 {
-		theHostGroup, err := server.GetHostgroup(hostname)
+		theHostGroup, err := server.GetHostgroup(name)
 		return theHostGroup, err
 	}
 
