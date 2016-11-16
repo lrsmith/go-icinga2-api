@@ -32,7 +32,7 @@ func (server *Server) GetHostgroup(name string) ([]HostgroupStruct, error) {
 }
 
 // CreateHostgroup ...
-func (server *Server) CreateHostgroup(name, displayName string) error {
+func (server *Server) CreateHostgroup(name, displayName string) (*HostgroupStruct, error) {
 
 	var newAttrs HostgroupAttrs
 	newAttrs.DisplayName = displayName
@@ -44,19 +44,20 @@ func (server *Server) CreateHostgroup(name, displayName string) error {
 
 	payloadJSON, marshalErr := json.Marshal(newHostgroup)
 	if marshalErr != nil {
-		return marshalErr
+		return nil, marshalErr
 	}
 
 	results, err := server.NewAPIRequest("PUT", "/objects/hostgroups/"+name, []byte(payloadJSON))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if results.Code == 200 {
-		return nil
+		theHostGroup, err := server.GetHostgroup(hostname)
+		return theHostGroup, err
 	}
 	// TODO Parse results.Results to get error messag
-	return errors.New(results.Status)
+	return nil, errors.New(results.Status)
 
 }
 
