@@ -6,7 +6,7 @@ import (
 )
 
 // GetHostgroup ...
-func (server *Server) GetHostgroup(name string) ([]HostgroupStruct, error) {
+func (server *Server) GetHostgroup(name string) (*HostgroupStruct, error) {
 
 	results, err := server.NewAPIRequest("GET", "/objects/hostgroups/"+name, nil)
 	if err != nil {
@@ -27,7 +27,11 @@ func (server *Server) GetHostgroup(name string) ([]HostgroupStruct, error) {
 		return nil, unmarshalErr
 	}
 
-	return hostgroup, err
+	if len(hostgroup) != 1 {
+		return nil, errors.New("Found more than one matching hostgroup.")
+	}
+
+	return &hostgroup[0], err
 
 }
 
