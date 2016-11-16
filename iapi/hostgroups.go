@@ -56,6 +56,7 @@ func (server *Server) CreateHostgroup(name, displayName string) (*HostgroupStruc
 		theHostGroup, err := server.GetHostgroup(hostname)
 		return theHostGroup, err
 	}
+
 	// TODO Parse results.Results to get error messag
 	return nil, errors.New(results.Status)
 
