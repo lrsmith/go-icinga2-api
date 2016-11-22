@@ -27,6 +27,10 @@ func (server *Server) GetHostgroup(name string) (*HostgroupStruct, error) {
 		return nil, unmarshalErr
 	}
 
+	if len(hostgroup) == 0 {
+		return nil, nil
+	}
+
 	if len(hostgroup) != 1 {
 		return nil, errors.New("Found more than one matching hostgroup.")
 	}

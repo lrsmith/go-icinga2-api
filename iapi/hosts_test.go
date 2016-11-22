@@ -22,7 +22,7 @@ func TestGetInvalidHost(t *testing.T) {
 
 	hostname := "c2-mysql-1"
 	host, err := VagrantImage.GetHost(hostname)
-	if err != nil {
+	if err != nil && host != nil {
 		t.Errorf("Error : Did not get empty list. ( %v : %s )", err, host)
 	}
 

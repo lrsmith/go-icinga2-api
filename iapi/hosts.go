@@ -27,6 +27,10 @@ func (server *Server) GetHost(hostname string) (*HostStruct, error) {
 		return nil, unmarshalErr
 	}
 
+	if len(host) == 0 {
+		return nil, nil
+	}
+
 	if len(host) != 1 {
 		return nil, errors.New("Found more than one matching host.")
 	}

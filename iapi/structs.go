@@ -9,7 +9,27 @@ duplicate or near duplicate defintions of structs are being defined but can be r
 be in place to ensure everything still works.
 */
 
-// HostgroupStruct is a struct used to store results from a Icinga2 HostGroup API Call. The content are also used to generate the JSON for the CreateHost call
+// CheckCommandStruct is a struct used to store results from an Icinga2 CheckCommand API call.
+type CheckCommandStruct struct {
+	Name  string            `json:"name"`
+	Type  string            `json:"type"`
+	Attrs CheckCommandAttrs `json:"attrs"`
+	Joins struct{}          `json:"joins"`
+	Meta  struct{}          `json:"meta"`
+}
+
+type CheckCommandAttrs struct {
+	Arguments interface{} `json:"arguments"`
+	Command   []string    `json:"command"`
+	Templates []string    `json:"templates"`
+	//	Env       interface{} `json:"env"`   				// Available to be set but not supported yet
+	//	Package   string      `json:"package"`   		// Available to be set but not supported yet
+	//	Timeout   float64     `json:"timeout"`   		// Available to be set but not supported yet
+	//	Vars      interface{} `json:"vars"`   			// Available to be set but not supported yet
+	//	Zone      string      `json:"zone"`   			// Available to be set but not supported yet
+}
+
+// HostgroupStruct is a struct used to store results from an Icinga2 HostGroup API Call. The content are also used to generate the JSON for the CreateHost call
 type HostgroupStruct struct {
 	Name  string         `json:"name"`
 	Type  string         `json:"type"`
@@ -28,7 +48,7 @@ type HostgroupAttrs struct {
 	Templates   []string `json:"templates"`
 }
 
-// HostStruct is a struct used to store results from a Icinga2 Host API Call. The content are also used to generate the JSON for the CreateHost call
+// HostStruct is a struct used to store results from an Icinga2 Host API Call. The content are also used to generate the JSON for the CreateHost call
 type HostStruct struct {
 	Name  string    `json:"name"`
 	Type  string    `json:"type"`

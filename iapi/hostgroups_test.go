@@ -1,4 +1,5 @@
 package iapi
+
 import "testing"
 
 func TestGetValidHostgroup(t *testing.T) {
@@ -11,8 +12,8 @@ func TestGetValidHostgroup(t *testing.T) {
 		t.Errorf("Error : Failed to find hostgroup %s : ( %s <> %s ) ", name, err, hostgroup)
 	}
 
-	if hostgroup[0].Name != name {
-		t.Errorf("Error : Did not get expected hostname. ( %s != %s )", hostgroup[0].Name, name)
+	if hostgroup.Name != name {
+		t.Errorf("Error : Did not get expected hostname. ( %s != %s )", hostgroup.Name, name)
 	}
 
 }
@@ -22,7 +23,7 @@ func TestGetInvalidHostgroup(t *testing.T) {
 	name := "irix-servers"
 
 	hostgroup, err := VagrantImage.GetHostgroup(name)
-	if (err != nil) || (len(hostgroup) != 0) {
+	if err != nil && hostgroup != nil {
 		t.Errorf("Error : Did not get empty list of hostgroup. ( %v : %s )", err, hostgroup)
 	}
 
@@ -32,7 +33,7 @@ func TestCreateHostGroup(t *testing.T) {
 
 	name := "docker-servers"
 	displayName := "Docker Host Servers"
-	err := VagrantImage.CreateHostgroup(name, displayName)
+	_, err := VagrantImage.CreateHostgroup(name, displayName)
 
 	if err != nil {
 		t.Errorf("Error : Failed to create hostgroup %s : %s", name, err)
