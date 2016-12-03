@@ -6,14 +6,18 @@ func TestGetValidHost(t *testing.T) {
 
 	hostname := "c1-mysql-1"
 
-	host, err := VagrantImage.GetHost(hostname)
+	hosts, err := VagrantImage.GetHost(hostname)
 
-	if (err != nil) || (host == nil) {
-		t.Errorf("Error : Failed to find %s : ( %s <> %s ) ", hostname, err, host)
+	if err != nil {
+		t.Errorf("Error : Failed to find %s : %s ) ", hostname, err)
 	}
 
-	if host.Name != hostname {
-		t.Errorf("Error : Did not get expected hostname. ( %s != %s )", host.Name, hostname)
+	if len(hosts) != 1 {
+		t.Errorf("Error : Did not get expected number of results. Expected 1 got %d", len(hosts))
+	}
+
+	if hosts[0].Name != hostname {
+		t.Errorf("Error : Did not get expected host. ( %s != %s )", hosts[0].Name, hostname)
 	}
 
 }

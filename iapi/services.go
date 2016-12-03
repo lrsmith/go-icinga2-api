@@ -5,12 +5,11 @@ import (
 	"errors"
 )
 
-// GetHost ...
-func (server *Server) GetHost(hostname string) ([]HostStruct, error) {
+// GetService ...
+func (server *Server) GetService(servicename, hostname string) ([]ServiceStruct, error) {
 
-	var hosts []HostStruct
-
-	results, err := server.NewAPIRequest("GET", "/objects/hosts/"+hostname, nil)
+	var services []ServiceStruct
+	results, err := server.NewAPIRequest("GET", "/objects/services/"+hostname+"!"+servicename, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -24,29 +23,25 @@ func (server *Server) GetHost(hostname string) ([]HostStruct, error) {
 	// then the JSON can be pushed into the appropriate struct.
 	// Note : Results is a slice so much push into a slice.
 
-	if unmarshalErr := json.Unmarshal(jsonStr, &hosts); unmarshalErr != nil {
+	if unmarshalErr := json.Unmarshal(jsonStr, &services); unmarshalErr != nil {
 		return nil, unmarshalErr
 	}
 
-	return hosts, err
+	return services, err
 
 }
 
-// CreateHost ...
-func (server *Server) CreateHost(hostname, address, checkCommand string, variables map[string]string) ([]HostStruct, error) {
+// CreateService ...
+func (server *Server) CreateService(servicename, hostname, checkCommand string) ([]ServiceStruct, error) {
 
-	var newAttrs HostAttrs
-	newAttrs.Address = address
-	newAttrs.CheckCommand = "hostalive"
-	newAttrs.Vars = variables
+	var newAttrs ServiceAttrs
+	newAttrs.CheckCommand = checkCommand
 
-	var newHost HostStruct
-	newHost.Name = hostname
-	newHost.Type = "Host"
-	newHost.Attrs = newAttrs
+	var newService ServiceStruct
+	newService.Attrs = newAttrs
 
 	// Create JSON from completed struct
-	payloadJSON, marshalErr := json.Marshal(newHost)
+	payloadJSON, marshalErr := json.Marshal(newService)
 	if marshalErr != nil {
 		return nil, marshalErr
 	}
@@ -54,14 +49,14 @@ func (server *Server) CreateHost(hostname, address, checkCommand string, variabl
 	//fmt.Printf("<payload> %s\n", payloadJSON)
 
 	// Make the API request to create the hosts.
-	results, err := server.NewAPIRequest("PUT", "/objects/hosts/"+hostname, []byte(payloadJSON))
+	results, err := server.NewAPIRequest("PUT", "/objects/services/"+hostname+"!"+servicename, []byte(payloadJSON))
 	if err != nil {
 		return nil, err
 	}
 
 	if results.Code == 200 {
-		hosts, err := server.GetHost(hostname)
-		return hosts, err
+		services, err := server.GetService(servicename, hostname)
+		return services, err
 	}
 
 	// TODO Parse results.Results to get error messag
@@ -69,10 +64,10 @@ func (server *Server) CreateHost(hostname, address, checkCommand string, variabl
 
 }
 
-// DeleteHost ...
-func (server *Server) DeleteHost(hostname string) error {
+// DeleteService ...
+func (server *Server) DeleteService(servicename, hostname string) error {
 
-	results, err := server.NewAPIRequest("DELETE", "/objects/hosts/"+hostname+"?cascade=1", nil)
+	results, err := server.NewAPIRequest("DELETE", "/objects/services/"+hostname+"!"+servicename, nil)
 	if err != nil {
 		return err
 	}

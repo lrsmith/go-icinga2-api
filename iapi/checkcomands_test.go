@@ -6,14 +6,18 @@ func TestGetValidCheckCommand(t *testing.T) {
 
 	name := "apache-status"
 
-	checkcommand, err := VagrantImage.GetCheckCommand(name)
+	checkcommands, err := VagrantImage.GetCheckCommand(name)
 
-	if (err != nil) || (checkcommand == nil) {
-		t.Errorf("Error : Failed to find check command %s : ( %s <> %v ) ", name, err, checkcommand)
+	if err != nil {
+		t.Errorf("Error : Failed to find check command %s : ( %s <> %v ) ", name, err, checkcommands)
 	}
 
-	if checkcommand.Name != name {
-		t.Errorf("Error : Did not get expected check command. ( %s != %s )", checkcommand.Name, name)
+	if len(checkcommands) != 1 {
+		t.Errorf("Error : Did not get expected number of results. Expected 1 got %d", len(checkcommands))
+	}
+
+	if checkcommands[0].Name != name {
+		t.Errorf("Error : Did not get expected check command. ( %s != %s )", checkcommands[0].Name, name)
 	}
 
 }

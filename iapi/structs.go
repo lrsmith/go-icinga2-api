@@ -9,6 +9,26 @@ duplicate or near duplicate defintions of structs are being defined but can be r
 be in place to ensure everything still works.
 */
 
+//ServiceStruct stores service results
+type ServiceStruct struct {
+	Attrs ServiceAttrs `json:"attrs"`
+	Joins struct{}     `json:"joins"`
+	//	Meta  struct{}     `json:"meta"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type ServiceAttrs struct {
+	CheckCommand string `json:"check_command"`
+	//	CheckInterval float64       `json:"check_interval"`
+	//	DisplayName   string        `json:"display_name"`
+	//	Groups        []interface{} `json:"groups"`
+	//Name string `json:"name"`
+	//	Templates     []string      `json:"templates"`
+	//	Type string `json:"type"`
+	//	Vars          interface{}   `json:"vars"`
+}
+
 // CheckCommandStruct is a struct used to store results from an Icinga2 CheckCommand API call.
 type CheckCommandStruct struct {
 	Name  string            `json:"name"`

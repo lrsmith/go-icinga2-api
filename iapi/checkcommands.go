@@ -6,8 +6,9 @@ import (
 )
 
 // GetCheckCommand ...
-func (server *Server) GetCheckCommand(name string) (*CheckCommandStruct, error) {
+func (server *Server) GetCheckCommand(name string) ([]CheckCommandStruct, error) {
 
+	var checkcommands []CheckCommandStruct
 	results, err := server.NewAPIRequest("GET", "/objects/checkcommands/"+name, nil)
 	if err != nil {
 		return nil, err
@@ -22,24 +23,16 @@ func (server *Server) GetCheckCommand(name string) (*CheckCommandStruct, error) 
 	// then the JSON can be pushed into the appropriate struct.
 	// Note : Results is a slice so much push into a slice.
 
-	var checkcommand []CheckCommandStruct
-	if unmarshalErr := json.Unmarshal(jsonStr, &checkcommand); unmarshalErr != nil {
+	if unmarshalErr := json.Unmarshal(jsonStr, &checkcommands); unmarshalErr != nil {
 		return nil, unmarshalErr
 	}
 
-	if len(checkcommand) == 0 {
-		return nil, nil
-	}
-	if len(checkcommand) != 1 {
-		return nil, errors.New("Found more than one matching check command.")
-	}
-
-	return &checkcommand[0], err
+	return checkcommands, err
 
 }
 
 // CreateCheckCommand ...
-func (server *Server) CreateCheckCommand(name, command string, command_arguments map[string]string) (*CheckCommandStruct, error) {
+func (server *Server) CreateCheckCommand(name, command string, command_arguments map[string]string) ([]CheckCommandStruct, error) {
 
 	var newAttrs CheckCommandAttrs
 	newAttrs.Command = []string{command}

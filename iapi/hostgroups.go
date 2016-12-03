@@ -6,8 +6,9 @@ import (
 )
 
 // GetHostgroup ...
-func (server *Server) GetHostgroup(name string) (*HostgroupStruct, error) {
+func (server *Server) GetHostgroup(name string) ([]HostgroupStruct, error) {
 
+	var hostgroups []HostgroupStruct
 	results, err := server.NewAPIRequest("GET", "/objects/hostgroups/"+name, nil)
 	if err != nil {
 		return nil, err
@@ -22,25 +23,24 @@ func (server *Server) GetHostgroup(name string) (*HostgroupStruct, error) {
 	// then the JSON can be pushed into the appropriate struct.
 	// Note : Results is a slice so much push into a slice.
 
-	var hostgroup []HostgroupStruct
-	if unmarshalErr := json.Unmarshal(jsonStr, &hostgroup); unmarshalErr != nil {
+	if unmarshalErr := json.Unmarshal(jsonStr, &hostgroups); unmarshalErr != nil {
 		return nil, unmarshalErr
 	}
 
-	if len(hostgroup) == 0 {
+	if len(hostgroups) == 0 {
 		return nil, nil
 	}
 
-	if len(hostgroup) != 1 {
+	if len(hostgroups) != 1 {
 		return nil, errors.New("Found more than one matching hostgroup.")
 	}
 
-	return &hostgroup[0], err
+	return hostgroups, err
 
 }
 
 // CreateHostgroup ...
-func (server *Server) CreateHostgroup(name, displayName string) (*HostgroupStruct, error) {
+func (server *Server) CreateHostgroup(name, displayName string) ([]HostgroupStruct, error) {
 
 	var newAttrs HostgroupAttrs
 	newAttrs.DisplayName = displayName
@@ -61,8 +61,8 @@ func (server *Server) CreateHostgroup(name, displayName string) (*HostgroupStruc
 	}
 
 	if results.Code == 200 {
-		theHostGroup, err := server.GetHostgroup(name)
-		return theHostGroup, err
+		hostgroups, err := server.GetHostgroup(name)
+		return hostgroups, err
 	}
 
 	// TODO Parse results.Results to get error messag

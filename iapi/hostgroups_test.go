@@ -6,14 +6,18 @@ func TestGetValidHostgroup(t *testing.T) {
 
 	name := "linux-servers"
 
-	hostgroup, err := VagrantImage.GetHostgroup(name)
+	hostgroups, err := VagrantImage.GetHostgroup(name)
 
-	if (err != nil) || (hostgroup == nil) {
-		t.Errorf("Error : Failed to find hostgroup %s : ( %s <> %s ) ", name, err, hostgroup)
+	if err != nil {
+		t.Errorf("Error : Failed to find hostgroup %s : ( %s <> %s ) ", name, err, hostgroups)
 	}
 
-	if hostgroup.Name != name {
-		t.Errorf("Error : Did not get expected hostname. ( %s != %s )", hostgroup.Name, name)
+	if len(hostgroups) != 1 {
+		t.Errorf("Error : Did not get expected number of results. Expected 1 got %d", len(hostgroups))
+	}
+
+	if hostgroups[0].Name != name {
+		t.Errorf("Error : Did not get expected hostname. ( %s != %s )", hostgroups[0].Name, name)
 	}
 
 }
