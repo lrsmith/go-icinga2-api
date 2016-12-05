@@ -2,7 +2,7 @@ package iapi
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 )
 
 // GetHost ...
@@ -64,8 +64,7 @@ func (server *Server) CreateHost(hostname, address, checkCommand string, variabl
 		return hosts, err
 	}
 
-	// TODO Parse results.Results to get error messag
-	return nil, errors.New(results.Status)
+	return nil, fmt.Errorf("%s", results.ErrorString)
 
 }
 
@@ -79,15 +78,8 @@ func (server *Server) DeleteHost(hostname string) error {
 
 	if results.Code == 200 {
 		return nil
-	} else if results.Code == 404 {
-		if results.Status == "No objects found." {
-			return nil
-		}
-
 	} else {
-		return errors.New(results.Status)
+		return fmt.Errorf("%s", results.ErrorString)
 	}
-
-	return errors.New(results.Status)
 
 }

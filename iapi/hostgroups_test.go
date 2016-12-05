@@ -56,12 +56,13 @@ func TestDeleteHostgroup(t *testing.T) {
 
 }
 
-func TestDeleteNonExistentHostGroup(t *testing.T) {
+func TestDeleteHostGroupDNE(t *testing.T) {
 
 	name := "docker-servers"
 	err := VagrantImage.DeleteHostgroup(name)
-	if err != nil {
-		t.Errorf("Error : Failed to delete hostgroup %s : %s", name, err)
+
+	if err.Error() != "No objects found." {
+		t.Error(err)
 	}
 
 }

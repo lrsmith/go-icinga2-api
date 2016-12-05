@@ -43,6 +43,9 @@ func TestGetInvalidService(t *testing.T) {
 
 }
 
+// func TestCreateServiceHostDNE
+// Try and create a service for a host that does not exist.
+// Should fail with an error about the host not existing.
 func TestCreateServiceHostDNE(t *testing.T) {
 
 	hostname := "c1-host-dne-1"
@@ -51,8 +54,8 @@ func TestCreateServiceHostDNE(t *testing.T) {
 
 	_, err := VagrantImage.CreateService(servicename, hostname, check_command)
 
-	if err != nil {
-		t.Errorf("Error : Failed to create service %s!%s : %s", hostname, servicename, err)
+	if !strings.Contains(err.Error(), "type 'Host' does not exist.") {
+		t.Error(err)
 	}
 
 }

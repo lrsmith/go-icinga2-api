@@ -2,7 +2,7 @@ package iapi
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 )
 
 // GetCheckCommand ...
@@ -57,17 +57,12 @@ func (server *Server) CreateCheckCommand(name, command string, command_arguments
 		return nil, err
 	}
 
-	//fmt.Printf("%v", results) // Useful debug. Better error message.
-	// Need to check for 500 'already exsts as this is not necessarialy an error. Would require a deeper inspection to determine.
-/*&{0 500 Object could not be created 500 [map[errors:[Configuration file '/var/lib/icinga2/api/packages/_api/icinga2-1476058673-1/conf.d/checkcommands/terraform-test-checkcommand.conf' already exists.] status:Object could not be created. code:500]]}--- FAIL: TestAccCreateCheckCommand (0.02s)*/
-
 	if results.Code == 200 {
 		theCheckCommand, err := server.GetCheckCommand(name)
 		return theCheckCommand, err
 	}
 
-	// TODO Parse results.Results to get error messag
-	return nil, errors.New(results.Status)
+	return nil, fmt.Errorf("%s", results.ErrorString)
 
 }
 
@@ -81,15 +76,8 @@ func (server *Server) DeleteCheckCommand(name string) error {
 
 	if results.Code == 200 {
 		return nil
-	} else if results.Code == 404 {
-		if results.Status == "No objects found." {
-			return nil
-		}
-
 	} else {
-		return errors.New(results.Status)
+		return fmt.Errorf("%s", results.ErrorString)
 	}
-
-	return errors.New(results.Status)
 
 }

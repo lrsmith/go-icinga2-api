@@ -78,11 +78,10 @@ func TestDeleteHost(t *testing.T) {
 
 }
 
-func TestDeleteNonExistentHost(t *testing.T) {
+func TestDeleteHostDNE(t *testing.T) {
 	hostname := "go-icinga2-api-1"
 	err := VagrantImage.DeleteHost(hostname)
-	if err != nil {
-		t.Errorf("Error : Failed to delete %s : %s", hostname, err)
+	if err.Error() != "No objects found." {
+		t.Error(err)
 	}
-
 }

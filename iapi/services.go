@@ -54,14 +54,11 @@ func (server *Server) CreateService(servicename, hostname, checkCommand string) 
 		return nil, err
 	}
 
-	//fmt.Printf("%v", results) // Useful debug. Better error message.
-
 	if results.Code == 200 {
 		services, err := server.GetService(servicename, hostname)
 		return services, err
 	}
 
-	//return nil, errors.New(results.Status)
 	return nil, fmt.Errorf("%s", results.ErrorString)
 
 }
@@ -77,7 +74,6 @@ func (server *Server) DeleteService(servicename, hostname string) error {
 	if results.Code == 200 {
 		return nil
 	} else {
-		//return errors.New(results.Status)
 		return fmt.Errorf("%s", results.ErrorString)
 	}
 
