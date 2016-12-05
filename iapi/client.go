@@ -7,19 +7,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 // Server ... Use to be ClientConfig
 type Server struct {
 	Username           string
 	Password           string
-	BaseURL                string
+	BaseURL            string
 	AllowUnverifiedSSL bool
 	httpClient         *http.Client
 }
 
 // func New ...
-func  New(username, password, url string, allowUnverifiedSSL bool) (*Server, error) {
+func New(username, password, url string, allowUnverifiedSSL bool) (*Server, error) {
 	return &Server{username, password, url, allowUnverifiedSSL, nil}, nil
 }
 
@@ -106,13 +107,29 @@ func (server *Server) NewAPIRequest(method, APICall string, jsonString []byte) (
 		return nil, decodeErr
 	}
 
-	if results.Code == 0 {
+	if results.Code == 0 { // results.Code has default value so set it.
 		//fmt.Println("Setting Result Code")
 		results.Code = response.StatusCode
 	}
-	if results.Status == "" {
+
+	if results.Status == "" { // results.Status has default value, so set it.
 		//fmt.Println("Setting Result Status")
 		results.Status = response.Status
+	}
+
+	//fmt.Printf("<<%v>>", results.Results)
+
+	switch results.Code {
+	case 0:
+		results.ErrorString = "Did not get a response code."
+	case 404:
+		results.ErrorString = results.Status
+	case 200:
+		results.ErrorString = results.Status
+	default:
+		theError := strings.Replace(results.Results.([]interface{})[0].(map[string]interface{})["errors"].([]interface{})[0].(string), "\n", " ", -1)
+		results.ErrorString = strings.Replace(theError, "Error: ", "", -1)
+
 	}
 
 	return &results, nil

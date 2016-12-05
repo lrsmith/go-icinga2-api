@@ -93,10 +93,11 @@ type HostAttrs struct {
 
 // APIResult Stores the results from NewApiRequest
 type APIResult struct {
-	Error   float64     `json:"error"`
-	Status  string      `json:"Status"`
-	Code    int         `json:"Code"`
-	Results interface{} `json:"results"`
+	Error       float64 `json:"error"`
+	ErrorString string
+	Status      string      `json:"Status"`
+	Code        int         `json:"Code"`
+	Results     interface{} `json:"results"`
 }
 
 // APIStatus stores the results of an Icinga2 API Status Call

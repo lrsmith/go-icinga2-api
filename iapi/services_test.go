@@ -1,6 +1,9 @@
 package iapi
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestGetValidService(t *testing.T) {
 
@@ -40,7 +43,23 @@ func TestGetInvalidService(t *testing.T) {
 
 }
 
-func TestCreateService(t *testing.T) {
+func TestCreateServiceHostDNE(t *testing.T) {
+
+	hostname := "c1-host-dne-1"
+	servicename := "ssh"
+	check_command := "ssh"
+
+	_, err := VagrantImage.CreateService(servicename, hostname, check_command)
+
+	if err != nil {
+		t.Errorf("Error : Failed to create service %s!%s : %s", hostname, servicename, err)
+	}
+
+}
+
+// func TestCreateHostAndService
+// Create a host and service via the API
+func TestCreateHostAndService(t *testing.T) {
 
 	hostname := "c1-test-1"
 	servicename := "ssh"
@@ -56,7 +75,26 @@ func TestCreateService(t *testing.T) {
 
 }
 
-func TestDeleteService(t *testing.T) {
+// func TestCreateServiceAlreadyExists
+// Test creating a host/service pair that already exists. Should get error about it already existing.
+func TestCreateServiceAlreadyExists(t *testing.T) {
+
+	hostname := "c1-test-1"
+	servicename := "ssh"
+	check_command := "ssh"
+
+	_, err := VagrantImage.CreateService(servicename, hostname, check_command)
+
+	if !strings.HasSuffix(err.Error(), " already exists.") {
+		t.Error(err)
+	}
+
+}
+
+// func TestDeleteHostAndService
+// Delete a service which was create via the API. NOTE : Host also is created via the API in previous test.
+// Should not get an error
+func TestDeleteHostAndService(t *testing.T) {
 
 	hostname := "c1-test-1"
 	servicename := "ssh"
@@ -68,16 +106,46 @@ func TestDeleteService(t *testing.T) {
 	}
 
 	_ = VagrantImage.DeleteHost(hostname)
-
 }
 
-/*
-func TestDeleteNonExistentHost(t *testing.T) {
-	hostname := "go-icinga2-api-1"
-	err := VagrantImage.DeleteHost(hostname)
-	if err != nil {
-		t.Errorf("Error : Failed to delete %s : %s", hostname, err)
+// func TestDeleteServiceHostDNE
+// Try and delet a service, where the host does not exists.
+// Should get an error abot no object found
+func TestDeleteServiceHostDNE(t *testing.T) {
+
+	hostname := "c1-test-1"
+	servicename := "ssh"
+
+	err := VagrantImage.DeleteService(servicename, hostname)
+	if err.Error() != "No objects found." {
+		t.Error(err)
 	}
-
 }
-*/
+
+// func TestDeleteServiceDNS
+// Try and delete a service, where the host exists but the service does not.
+// Should get an error abot no object found
+func TestDeleteServiceDNE(t *testing.T) {
+
+	hostname := "c1-mysql-1"
+	servicename := "foo"
+
+	err := VagrantImage.DeleteService(servicename, hostname)
+	if err.Error() != "No objects found." {
+		t.Error(err)
+	}
+}
+
+// func TestDeleteServiceNonAPI
+// Services that were not created via the API, cannot be deleted via the API
+// Should get an error about not being created via the API
+func TestDeleteServiceNonAPI(t *testing.T) {
+
+	hostname := "c1-mysql-1"
+	servicename := "ssh"
+
+	err := VagrantImage.DeleteService(servicename, hostname)
+	if err.Error() != "Object cannot be deleted because it was not created using the API." {
+		t.Error(err)
+	}
+}

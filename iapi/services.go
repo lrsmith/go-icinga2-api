@@ -2,7 +2,7 @@ package iapi
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 )
 
 // GetService ...
@@ -54,13 +54,15 @@ func (server *Server) CreateService(servicename, hostname, checkCommand string) 
 		return nil, err
 	}
 
+	//fmt.Printf("%v", results) // Useful debug. Better error message.
+
 	if results.Code == 200 {
 		services, err := server.GetService(servicename, hostname)
 		return services, err
 	}
 
-	// TODO Parse results.Results to get error messag
-	return nil, errors.New(results.Status)
+	//return nil, errors.New(results.Status)
+	return nil, fmt.Errorf("%s", results.ErrorString)
 
 }
 
@@ -74,15 +76,9 @@ func (server *Server) DeleteService(servicename, hostname string) error {
 
 	if results.Code == 200 {
 		return nil
-	} else if results.Code == 404 {
-		if results.Status == "No objects found." {
-			return nil
-		}
-
 	} else {
-		return errors.New(results.Status)
+		//return errors.New(results.Status)
+		return fmt.Errorf("%s", results.ErrorString)
 	}
-
-	return errors.New(results.Status)
 
 }
