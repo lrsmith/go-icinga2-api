@@ -6,30 +6,20 @@ func TestGetValidHost(t *testing.T) {
 
 	hostname := "c1-mysql-1"
 
-	hosts, err := VagrantImage.GetHost(hostname)
+	_, err := VagrantImage.GetHost(hostname)
 
 	if err != nil {
-		t.Errorf("Error : Failed to find %s : %s ) ", hostname, err)
+		t.Error(err)
 	}
-
-	if len(hosts) != 1 {
-		t.Errorf("Error : Did not get expected number of results. Expected 1 got %d", len(hosts))
-	}
-
-	if hosts[0].Name != hostname {
-		t.Errorf("Error : Did not get expected host. ( %s != %s )", hosts[0].Name, hostname)
-	}
-
 }
 
 func TestGetInvalidHost(t *testing.T) {
 
 	hostname := "c2-mysql-1"
-	host, err := VagrantImage.GetHost(hostname)
-	if err != nil && host != nil {
-		t.Errorf("Error : Did not get empty list. ( %v : %s )", err, host)
+	_, err := VagrantImage.GetHost(hostname)
+	if err != nil {
+		t.Error(err)
 	}
-
 }
 
 func TestCreateSimpleHost(t *testing.T) {
@@ -40,9 +30,8 @@ func TestCreateSimpleHost(t *testing.T) {
 	_, err := VagrantImage.CreateHost(hostname, IPAddress, CheckCommand, nil)
 
 	if err != nil {
-		t.Errorf("Error : Failed to create host %s : %s", hostname, err)
+		t.Error(err)
 	}
-
 }
 
 func TestCreateHostWithVariables(t *testing.T) {
@@ -57,13 +46,13 @@ func TestCreateHostWithVariables(t *testing.T) {
 
 	_, err := VagrantImage.CreateHost(hostname, IPAddress, CheckCommand, variables)
 	if err != nil {
-		t.Errorf("Error : Failed to create host %s : %s", hostname, err)
+		t.Error(err)
 	}
 
 	// Delete host after creating it.
 	deleteErr := VagrantImage.DeleteHost(hostname)
 	if deleteErr != nil {
-		t.Errorf("Error : Cleanup failed for host %s : %s", hostname, err)
+		t.Error(err)
 	}
 }
 
@@ -73,9 +62,8 @@ func TestDeleteHost(t *testing.T) {
 
 	err := VagrantImage.DeleteHost(hostname)
 	if err != nil {
-		t.Errorf("Error : Failed to delete %s : %s", hostname, err)
+		t.Error(err)
 	}
-
 }
 
 func TestDeleteHostDNE(t *testing.T) {

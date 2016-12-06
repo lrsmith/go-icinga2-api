@@ -5,10 +5,10 @@ import (
 	"fmt"
 )
 
-// GetCheckCommand ...
-func (server *Server) GetCheckCommand(name string) ([]CheckCommandStruct, error) {
+// GetCheckcommand ...
+func (server *Server) GetCheckcommand(name string) ([]CheckcommandStruct, error) {
 
-	var checkcommands []CheckCommandStruct
+	var checkcommands []CheckcommandStruct
 	results, err := server.NewAPIRequest("GET", "/objects/checkcommands/"+name, nil)
 	if err != nil {
 		return nil, err
@@ -31,20 +31,20 @@ func (server *Server) GetCheckCommand(name string) ([]CheckCommandStruct, error)
 
 }
 
-// CreateCheckCommand ...
-func (server *Server) CreateCheckCommand(name, command string, command_arguments map[string]string) ([]CheckCommandStruct, error) {
+// CreateCheckcommand ...
+func (server *Server) CreateCheckcommand(name, command string, command_arguments map[string]string) ([]CheckcommandStruct, error) {
 
-	var newAttrs CheckCommandAttrs
+	var newAttrs CheckcommandAttrs
 	newAttrs.Command = []string{command}
 	newAttrs.Arguments = command_arguments
 
-	var newCheckCommand CheckCommandStruct
-	newCheckCommand.Name = name
-	newCheckCommand.Type = "CheckCommand"
-	newCheckCommand.Attrs = newAttrs
+	var newCheckcommand CheckcommandStruct
+	newCheckcommand.Name = name
+	newCheckcommand.Type = "CheckCommand"
+	newCheckcommand.Attrs = newAttrs
 
 	// Create JSON from completed struct
-	payloadJSON, marshalErr := json.Marshal(newCheckCommand)
+	payloadJSON, marshalErr := json.Marshal(newCheckcommand)
 	if marshalErr != nil {
 		return nil, marshalErr
 	}
@@ -58,16 +58,16 @@ func (server *Server) CreateCheckCommand(name, command string, command_arguments
 	}
 
 	if results.Code == 200 {
-		theCheckCommand, err := server.GetCheckCommand(name)
-		return theCheckCommand, err
+		theCheckcommand, err := server.GetCheckcommand(name)
+		return theCheckcommand, err
 	}
 
 	return nil, fmt.Errorf("%s", results.ErrorString)
 
 }
 
-// DeleteCheckCommand ...
-func (server *Server) DeleteCheckCommand(name string) error {
+// DeleteCheckcommand ...
+func (server *Server) DeleteCheckcommand(name string) error {
 
 	results, err := server.NewAPIRequest("DELETE", "/objects/checkcommands/"+name+"?cascade=1", nil)
 	if err != nil {

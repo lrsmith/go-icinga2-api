@@ -2,62 +2,53 @@ package iapi
 
 import "testing"
 
-func TestGetValidCheckCommand(t *testing.T) {
+func TestGetValidCheckcommand(t *testing.T) {
 
 	name := "apache-status"
 
-	checkcommands, err := VagrantImage.GetCheckCommand(name)
+	_, err := VagrantImage.GetCheckcommand(name)
 
 	if err != nil {
-		t.Errorf("Error : Failed to find check command %s : ( %s <> %v ) ", name, err, checkcommands)
+		t.Error(err)
 	}
-
-	if len(checkcommands) != 1 {
-		t.Errorf("Error : Did not get expected number of results. Expected 1 got %d", len(checkcommands))
-	}
-
-	if checkcommands[0].Name != name {
-		t.Errorf("Error : Did not get expected check command. ( %s != %s )", checkcommands[0].Name, name)
-	}
-
 }
 
-func TestGetInvalidCheckCommand(t *testing.T) {
+func TestGetInvalidCheckcommand(t *testing.T) {
 
 	name := "invalid-check-command"
 
-	checkcommand, err := VagrantImage.GetCheckCommand(name)
-	if err != nil && checkcommand != nil {
-		t.Errorf("Error : Did not get empty list of check commands. ( %s : %v )", err, checkcommand)
+	_, err := VagrantImage.GetCheckcommand(name)
+	if err != nil {
+		t.Error(err)
 	}
 
 }
 
-func TestCreateCheckCommand(t *testing.T) {
+func TestCreateCheckcommand(t *testing.T) {
 
 	name := "check-command-docker"
 	command := "/dev/null"
 
-	_, err := VagrantImage.CreateCheckCommand(name, command, nil)
+	_, err := VagrantImage.CreateCheckcommand(name, command, nil)
 
 	if err != nil {
-		t.Errorf("Error : Failed to create Check Command %s : %s", name, err)
+		t.Error(err)
 	}
 
 }
 
-func TestDeleteCheckCommand(t *testing.T) {
+func TestDeleteCheckcommand(t *testing.T) {
 
 	name := "check-command-docker"
 
-	err := VagrantImage.DeleteCheckCommand(name)
+	err := VagrantImage.DeleteCheckcommand(name)
 	if err != nil {
-		t.Errorf("Error : Failed to delete Check Command %s : %s", name, err)
+		t.Error(err)
 	}
 
 }
 
-func TestCreateCheckCommandArgs(t *testing.T) {
+func TestCreateCheckcommandArgs(t *testing.T) {
 
 	name := "check-command-docker-args"
 	command := "/dev/null"
@@ -65,28 +56,16 @@ func TestCreateCheckCommandArgs(t *testing.T) {
 	command_args["-I"] = "Iarg"
 	command_args["-X"] = "Xarg"
 
-	_, err := VagrantImage.CreateCheckCommand(name, command, command_args)
+	_, err := VagrantImage.CreateCheckcommand(name, command, command_args)
 
 	if err != nil {
-		t.Errorf("Error : Failed to create Check Command %s : %s", name, err)
+		t.Error(err)
 	}
 
 	// Delete check command after creating it.
-	deleteErr := VagrantImage.DeleteCheckCommand(name)
+	deleteErr := VagrantImage.DeleteCheckcommand(name)
 	if deleteErr != nil {
-		t.Errorf("Error : Cleanup failed for Check Command %s : %s", name, err)
+		t.Error(err)
 	}
 
 }
-
-/* NOT WORKING
-func TestDeleteNonExistentCheckCommand(t *testing.T) {
-
-	name := "check-command-docker-2"
-	err := VagrantImage.DeleteCheckCommand(name)
-	if err != nil {
-		t.Errorf("Error : Failed to delete Check Command %s : %s", name, err)
-	}
-
-}
-*/
