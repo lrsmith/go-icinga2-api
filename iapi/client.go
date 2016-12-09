@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -56,13 +55,13 @@ func (server *Server) Connect() error {
 	request.Header.Set("Content-Type", "application/json")
 
 	response, err := server.httpClient.Do(request)
-	defer response.Body.Close()
 
-	if (err != nil) || (response.StatusCode != 200) {
+	if (err != nil) || (response == nil) {
 		server.httpClient = nil
-		fmt.Printf("Failed to connect to %s : %s\n", server.BaseURL, response.Status)
 		return err
 	}
+
+	defer response.Body.Close()
 
 	return nil
 

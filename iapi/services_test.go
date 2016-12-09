@@ -10,7 +10,7 @@ func TestGetValidService(t *testing.T) {
 	hostname := "c1-mysql-1"
 	servicename := "ssh"
 
-	_, err := VagrantImage.GetService(servicename, hostname)
+	_, err := Icinga2_Server.GetService(servicename, hostname)
 
 	if err != nil {
 		t.Error(err)
@@ -22,7 +22,7 @@ func TestGetInvalidService(t *testing.T) {
 	hostname := "c1-mysql-1"
 	servicename := "foo"
 
-	_, err := VagrantImage.GetService(servicename, hostname)
+	_, err := Icinga2_Server.GetService(servicename, hostname)
 
 	if err != nil {
 		t.Error(err)
@@ -38,7 +38,7 @@ func TestCreateServiceHostDNE(t *testing.T) {
 	servicename := "ssh"
 	check_command := "ssh"
 
-	_, err := VagrantImage.CreateService(servicename, hostname, check_command)
+	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command)
 
 	if !strings.Contains(err.Error(), "type 'Host' does not exist.") {
 		t.Error(err)
@@ -54,9 +54,9 @@ func TestCreateHostAndService(t *testing.T) {
 	servicename := "ssh"
 	check_command := "ssh"
 
-	_, _ = VagrantImage.CreateHost(hostname, "127.0.0.1", "hostalive", nil)
+	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "hostalive", nil)
 
-	_, err := VagrantImage.CreateService(servicename, hostname, check_command)
+	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command)
 
 	if err != nil {
 		t.Errorf("Error : Failed to create service %s!%s : %s", hostname, servicename, err)
@@ -72,7 +72,7 @@ func TestCreateServiceAlreadyExists(t *testing.T) {
 	servicename := "ssh"
 	check_command := "ssh"
 
-	_, err := VagrantImage.CreateService(servicename, hostname, check_command)
+	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command)
 
 	if !strings.HasSuffix(err.Error(), " already exists.") {
 		t.Error(err)
@@ -88,13 +88,13 @@ func TestDeleteHostAndService(t *testing.T) {
 	hostname := "c1-test-1"
 	servicename := "ssh"
 
-	err := VagrantImage.DeleteService(servicename, hostname)
+	err := Icinga2_Server.DeleteService(servicename, hostname)
 	if err != nil {
-		_ = VagrantImage.DeleteHost(hostname)
+		_ = Icinga2_Server.DeleteHost(hostname)
 		t.Error(err)
 	}
 
-	_ = VagrantImage.DeleteHost(hostname)
+	_ = Icinga2_Server.DeleteHost(hostname)
 }
 
 // func TestDeleteServiceHostDNE
@@ -105,7 +105,7 @@ func TestDeleteServiceHostDNE(t *testing.T) {
 	hostname := "c1-test-1"
 	servicename := "ssh"
 
-	err := VagrantImage.DeleteService(servicename, hostname)
+	err := Icinga2_Server.DeleteService(servicename, hostname)
 	if err.Error() != "No objects found." {
 		t.Error(err)
 	}
@@ -119,7 +119,7 @@ func TestDeleteServiceDNE(t *testing.T) {
 	hostname := "c1-mysql-1"
 	servicename := "foo"
 
-	err := VagrantImage.DeleteService(servicename, hostname)
+	err := Icinga2_Server.DeleteService(servicename, hostname)
 	if err.Error() != "No objects found." {
 		t.Error(err)
 	}
@@ -133,7 +133,7 @@ func TestDeleteServiceNonAPI(t *testing.T) {
 	hostname := "c1-mysql-1"
 	servicename := "ssh"
 
-	err := VagrantImage.DeleteService(servicename, hostname)
+	err := Icinga2_Server.DeleteService(servicename, hostname)
 	if err.Error() != "Object cannot be deleted because it was not created using the API." {
 		t.Error(err)
 	}
