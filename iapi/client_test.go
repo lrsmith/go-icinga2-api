@@ -1,4 +1,5 @@
 package iapi
+
 import "testing"
 
 var VagrantImage = Server{"root", "icinga", "https://192.168.33.5:5665/v1", true, nil}
@@ -25,10 +26,8 @@ func TestNewAPIRequest(t *testing.T) {
 
 	result, _ := VagrantImage.NewAPIRequest("GET", "/status", nil)
 
-	if result.Status != "200 OK" {
+	if result.Code != 200 {
 		t.Errorf("%s", result.Status)
 	}
-
-	//fmt.Printf("%v", result.Results)
 
 }
