@@ -1,34 +1,52 @@
 package iapi
+
 import "testing"
 
-var VagrantImage = Server{"root", "icinga", "https://192.168.33.5:5665/v1", true, nil}
-var VagrantImageBadPassword = Server{"root", "icinga2", "https://192.168.33.5:5665/v1", true, nil}
+var Icinga2_Server = Server{"root", "icinga", "https://127.0.0.1:5665/v1", true, nil}
 
 func TestConnect(t *testing.T) {
 
-	VagrantImage.Connect()
+	Icinga2_Server.Connect()
 
-	if VagrantImage.httpClient == nil {
-		t.Errorf("Failed to succesfull connect to Icinga Server")
+	if Icinga2_Server.httpClient == nil {
+		t.Errorf("Failed to succesfully connect to Icinga Server")
+	}
+}
+
+func TestConnectServerUnavailable(t *testing.T) {
+
+	var Icinga2_Server = Server{"root", "icinga", "https://172.0.0.1:4665/v1", true, nil}
+	err := Icinga2_Server.Connect()
+
+	if err == nil {
+		t.Errorf("Error : Did not get error connecting to unavailable server.")
 	}
 }
 
 func TestConnectWithBadCredential(t *testing.T) {
 
-	VagrantImageBadPassword.Connect()
-	if VagrantImageBadPassword.httpClient != nil {
-		t.Errorf("Did not fail with bad credentials")
+	var Icinga2_Server = Server{"root", "icinga2", "https://127.0.0.1:5665/v1", true, nil}
+	err := Icinga2_Server.Connect()
+	if err != nil {
+		t.Errorf("Did not fail with bad credentials : %s", err)
 	}
 }
 
 func TestNewAPIRequest(t *testing.T) {
 
-	result, _ := VagrantImage.NewAPIRequest("GET", "/status", nil)
+	result, _ := Icinga2_Server.NewAPIRequest("GET", "/status", nil)
 
-	if result.Status != "200 OK" {
+	if result.Code != 200 {
 		t.Errorf("%s", result.Status)
 	}
+}
 
-	//fmt.Printf("%v", result.Results)
+func TestConnectServerBadURINoVersion(t *testing.T) {
 
+	var Icinga2_Server = Server{"root", "icinga", "https://127.0.0.1:5665", true, nil}
+	result, _ := Icinga2_Server.NewAPIRequest("GET", "/status", nil)
+
+	if result.Code != 404 {
+		t.Errorf("Error : Did not get expected 404 error connection to bad URI, with no version.")
+	}
 }

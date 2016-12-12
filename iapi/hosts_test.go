@@ -6,7 +6,7 @@ func TestGetValidHost(t *testing.T) {
 
 	hostname := "c1-mysql-1"
 
-	_, err := VagrantImage.GetHost(hostname)
+	_, err := Icinga2_Server.GetHost(hostname)
 
 	if err != nil {
 		t.Error(err)
@@ -16,7 +16,7 @@ func TestGetValidHost(t *testing.T) {
 func TestGetInvalidHost(t *testing.T) {
 
 	hostname := "c2-mysql-1"
-	_, err := VagrantImage.GetHost(hostname)
+	_, err := Icinga2_Server.GetHost(hostname)
 	if err != nil {
 		t.Error(err)
 	}
@@ -27,7 +27,7 @@ func TestCreateSimpleHost(t *testing.T) {
 	hostname := "go-icinga2-api-1"
 	IPAddress := "127.0.0.2"
 	CheckCommand := "CheckItRealGood"
-	_, err := VagrantImage.CreateHost(hostname, IPAddress, CheckCommand, nil)
+	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, nil)
 
 	if err != nil {
 		t.Error(err)
@@ -44,13 +44,13 @@ func TestCreateHostWithVariables(t *testing.T) {
 	variables["vars.os"] = "Linux"
 	variables["vars.creator"] = "Terraform"
 
-	_, err := VagrantImage.CreateHost(hostname, IPAddress, CheckCommand, variables)
+	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, variables)
 	if err != nil {
 		t.Error(err)
 	}
 
 	// Delete host after creating it.
-	deleteErr := VagrantImage.DeleteHost(hostname)
+	deleteErr := Icinga2_Server.DeleteHost(hostname)
 	if deleteErr != nil {
 		t.Error(err)
 	}
@@ -60,7 +60,7 @@ func TestDeleteHost(t *testing.T) {
 
 	hostname := "go-icinga2-api-1"
 
-	err := VagrantImage.DeleteHost(hostname)
+	err := Icinga2_Server.DeleteHost(hostname)
 	if err != nil {
 		t.Error(err)
 	}
@@ -68,7 +68,7 @@ func TestDeleteHost(t *testing.T) {
 
 func TestDeleteHostDNE(t *testing.T) {
 	hostname := "go-icinga2-api-1"
-	err := VagrantImage.DeleteHost(hostname)
+	err := Icinga2_Server.DeleteHost(hostname)
 	if err.Error() != "No objects found." {
 		t.Error(err)
 	}

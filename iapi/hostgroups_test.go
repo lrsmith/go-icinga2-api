@@ -6,7 +6,7 @@ func TestGetValidHostgroup(t *testing.T) {
 
 	name := "linux-servers"
 
-	_, err := VagrantImage.GetHostgroup(name)
+	_, err := Icinga2_Server.GetHostgroup(name)
 
 	if err != nil {
 		t.Error(err)
@@ -18,7 +18,7 @@ func TestGetInvalidHostgroup(t *testing.T) {
 
 	name := "irix-servers"
 
-	_, err := VagrantImage.GetHostgroup(name)
+	_, err := Icinga2_Server.GetHostgroup(name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -29,7 +29,7 @@ func TestCreateHostgroup(t *testing.T) {
 
 	name := "docker-servers"
 	displayName := "Docker Host Servers"
-	_, err := VagrantImage.CreateHostgroup(name, displayName)
+	_, err := Icinga2_Server.CreateHostgroup(name, displayName)
 
 	if err != nil {
 		t.Error(err)
@@ -43,7 +43,7 @@ func TestDeleteHostgroup(t *testing.T) {
 
 	name := "docker-servers"
 
-	err := VagrantImage.DeleteHostgroup(name)
+	err := Icinga2_Server.DeleteHostgroup(name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -52,9 +52,9 @@ func TestDeleteHostgroup(t *testing.T) {
 // func TestDeleteHostgroupNonAPI
 func TestDeleteHostgroupNonAPI(t *testing.T) {
 
-	name := "bp-hosts-mysql"
+	name := "linux-servers"
 
-	err := VagrantImage.DeleteHostgroup(name)
+	err := Icinga2_Server.DeleteHostgroup(name)
 	if err.Error() != "Object cannot be deleted because it was not created using the API." {
 		t.Error(err)
 	}
@@ -63,7 +63,7 @@ func TestDeleteHostgroupNonAPI(t *testing.T) {
 func TestDeleteHostgroupDNE(t *testing.T) {
 
 	name := "docker-servers"
-	err := VagrantImage.DeleteHostgroup(name)
+	err := Icinga2_Server.DeleteHostgroup(name)
 
 	if err.Error() != "No objects found." {
 		t.Error(err)
