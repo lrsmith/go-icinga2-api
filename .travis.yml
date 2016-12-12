@@ -1,4 +1,18 @@
 language: go
 go:
   - 1.7.x
-  - 1.8
+
+env:
+  global:
+    - ICINGA2_API_URL=https://192.168.99.100:4665/v1
+    - ICINGA2_API_USER=root
+    - ICINGA2_API_PASSWORD=icinga
+
+services:
+  - docker
+
+before_install:
+  - docker icinga/icinga2
+  - docker run -d -ti --name icinga2-api -p 127.0.0.1:4080:80 -p 127.0.0.1:4665:5665 icinga/icinga2
+  - docker ps -a
+
