@@ -20,3 +20,5 @@ before_install:
   - sleep 30
   - docker ps -a
 
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
