@@ -52,7 +52,7 @@ func TestDeleteHostgroup(t *testing.T) {
 // func TestDeleteHostgroupNonAPI
 func TestDeleteHostgroupNonAPI(t *testing.T) {
 
-	name := "bp-hosts-mysql"
+	name := "linux-servers"
 
 	err := Icinga2_Server.DeleteHostgroup(name)
 	if err.Error() != "Object cannot be deleted because it was not created using the API." {

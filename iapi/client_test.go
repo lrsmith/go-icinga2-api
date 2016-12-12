@@ -26,9 +26,9 @@ func TestConnectServerUnavailable(t *testing.T) {
 func TestConnectWithBadCredential(t *testing.T) {
 
 	var Icinga2_Server = Server{"root", "icinga2", "https://127.0.0.1:5665/v1", true, nil}
-	Icinga2_Server.Connect()
-	if Icinga2_Server.httpClient != nil { // Need to actually detect message. Catches server down, etc
-		t.Errorf("Did not fail with bad credentials")
+	err := Icinga2_Server.Connect()
+	if err != nil {
+		t.Errorf("Did not fail with bad credentials : %s", err)
 	}
 }
 

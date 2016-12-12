@@ -130,8 +130,8 @@ func TestDeleteServiceDNE(t *testing.T) {
 // Should get an error about not being created via the API
 func TestDeleteServiceNonAPI(t *testing.T) {
 
-	hostname := "c1-mysql-1"
-	servicename := "ssh"
+	hostname := "docker-icinga2"
+	servicename := "random-001"
 
 	err := Icinga2_Server.DeleteService(servicename, hostname)
 	if err.Error() != "Object cannot be deleted because it was not created using the API." {
