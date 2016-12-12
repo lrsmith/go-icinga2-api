@@ -16,6 +16,7 @@ services:
 
 before_install:
   - docker pull icinga/icinga2
-  - docker run -d -p 127.0.0.1:4080:80 -p 127.0.0.1:5665:5665 icinga/icinga2
+  - docker run -d -ti --name icinga2-api -p 4080:80 -p 5665:5665 icinga/icinga2
+  - sleep 30
   - docker ps -a
 
