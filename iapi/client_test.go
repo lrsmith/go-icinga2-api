@@ -2,7 +2,7 @@ package iapi
 
 import "testing"
 
-var Icinga2_Server = Server{"root", "icinga", "https://127.0.0.1:5665/v1", true, nil}
+var Icinga2_Server = Server{"icinga-test", "icinga", "https://127.0.0.1:5665/v1", true, nil}
 
 func TestConnect(t *testing.T) {
 
@@ -15,7 +15,7 @@ func TestConnect(t *testing.T) {
 
 func TestConnectServerUnavailable(t *testing.T) {
 
-	var Icinga2_Server = Server{"root", "icinga", "https://172.0.0.1:4665/v1", true, nil}
+	var Icinga2_Server = Server{"root", "icinga", "https://127.0.0.1:4665/v1", true, nil}
 	err := Icinga2_Server.Connect()
 
 	if err == nil {
@@ -25,7 +25,7 @@ func TestConnectServerUnavailable(t *testing.T) {
 
 func TestConnectWithBadCredential(t *testing.T) {
 
-	var Icinga2_Server = Server{"root", "icinga2", "https://127.0.0.1:5665/v1", true, nil}
+	var Icinga2_Server = Server{"unknownUser", "unknownPW", "https://127.0.0.1:5665/v1", true, nil}
 	err := Icinga2_Server.Connect()
 	if err != nil {
 		t.Errorf("Did not fail with bad credentials : %s", err)
@@ -43,7 +43,7 @@ func TestNewAPIRequest(t *testing.T) {
 
 func TestConnectServerBadURINoVersion(t *testing.T) {
 
-	var Icinga2_Server = Server{"root", "icinga", "https://127.0.0.1:5665", true, nil}
+	var Icinga2_Server = Server{"icinga-test", "icinga", "https://127.0.0.1:5665", true, nil}
 	result, _ := Icinga2_Server.NewAPIRequest("GET", "/status", nil)
 
 	if result.Code != 404 {

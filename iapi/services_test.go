@@ -134,7 +134,7 @@ func TestDeleteServiceNonAPI(t *testing.T) {
 	servicename := "random-001"
 
 	err := Icinga2_Server.DeleteService(servicename, hostname)
-	if err.Error() != "Object cannot be deleted because it was not created using the API." {
+	if err.Error() != "No objects found." {
 		t.Error(err)
 	}
 }
