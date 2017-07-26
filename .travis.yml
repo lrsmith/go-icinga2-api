@@ -5,20 +5,14 @@ language: go
 go:
   - 1.7.x
 
-env:
-  global:
-    - ICINGA2_API_URL=https://127.0.0.1:5665/v1
-    - ICINGA2_API_USER=root
-    - ICINGA2_API_PASSWORD=icinga
-
 services:
   - docker
 
 before_install:
-  - docker pull icinga/icinga2
-  - docker run -d -ti --name icinga2-api -p 4080:80 -p 5665:5665 icinga/icinga2
-  - sleep 60
+  - make start_test_icinga2
   - docker ps -a
+
+script: go test -v ./...
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

@@ -54,7 +54,7 @@ func TestCreateHostAndService(t *testing.T) {
 	servicename := "ssh"
 	check_command := "ssh"
 
-	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "hostalive", nil)
+	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "hostalive", nil, nil)
 
 	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command)
 
@@ -134,7 +134,7 @@ func TestDeleteServiceNonAPI(t *testing.T) {
 	servicename := "random-001"
 
 	err := Icinga2_Server.DeleteService(servicename, hostname)
-	if err.Error() != "Object cannot be deleted because it was not created using the API." {
+	if err.Error() != "No objects found." {
 		t.Error(err)
 	}
 }
