@@ -38,7 +38,7 @@ func TestCreateServiceHostDNE(t *testing.T) {
 	servicename := "ssh"
 	check_command := "ssh"
 
-	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command)
+	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
 
 	if !strings.Contains(err.Error(), "type 'Host' does not exist.") {
 		t.Error(err)
@@ -57,12 +57,29 @@ func TestCreateHostAndService(t *testing.T) {
 
 	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "hostalive", nil, nil, Group)
 
-	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command)
+	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
 
 	if err != nil {
 		t.Errorf("Error : Failed to create service %s!%s : %s", hostname, servicename, err)
 	}
 
+}
+
+// func TestCreateServiceWithVariables
+// Create a service (with variables) via the API
+func TestCreateServiceWithVariables(t *testing.T) {
+
+	hostname := "c1-test-1"
+	servicename := "nrpe"
+	check_command := "nrpe"
+	variables := make(map[string]string)
+	variables["vars.nrpe_command"] = "check_load"
+
+	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, variables)
+
+	if err != nil {
+		t.Errorf("Error : Failed to create service %s!%s : %s", hostname, servicename, err)
+	}
 }
 
 // func TestCreateServiceAlreadyExists
@@ -73,7 +90,7 @@ func TestCreateServiceAlreadyExists(t *testing.T) {
 	servicename := "ssh"
 	check_command := "ssh"
 
-	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command)
+	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
 
 	if !strings.HasSuffix(err.Error(), " already exists.") {
 		t.Error(err)
