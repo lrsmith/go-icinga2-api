@@ -26,7 +26,7 @@ func TestCreateSimpleHost(t *testing.T) {
 
 	hostname := "go-icinga2-api-1"
 	IPAddress := "127.0.0.2"
-	CheckCommand := "CheckItRealGood"
+	CheckCommand := "hostalive"
 	Group := []string{"linux-servers"}
 	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, nil, nil, Group)
 
@@ -39,7 +39,7 @@ func TestCreateHostWithVariables(t *testing.T) {
 
 	hostname := "go-icinga2-api-2"
 	IPAddress := "127.0.0.3"
-	CheckCommand := "CheckItRealGood"
+	CheckCommand := "hostalive"
 	Group := []string{"linux-servers"}
 	variables := make(map[string]string)
 
@@ -61,7 +61,7 @@ func TestCreateHostWithVariables(t *testing.T) {
 func TestCreateHostWithTemplates(t *testing.T) {
 	hostname := "go-icinga2-api-2"
 	IPAddress := "127.0.0.3"
-	CheckCommand := "CheckItRealGood"
+	CheckCommand := "hostalive"
 	Group := []string{"linux-servers"}
 	templates := []string{"template1", "template2"}
 
