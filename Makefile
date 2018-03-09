@@ -3,3 +3,6 @@ start_test_icinga2:
 	sleep 60
 	docker exec icinga2 bash -c 'echo -e "object ApiUser \"icinga-test\" {\n  password = \"icinga\"\n  permissions = [ \"*\" ]\n}" > /etc/icinga2/conf.d/test-api-user.conf'
 	docker exec icinga2 supervisorctl restart icinga2
+
+test:
+	go test ./... -v

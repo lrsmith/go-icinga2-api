@@ -40,7 +40,7 @@ func (server *Server) CreateHost(hostname, address, checkCommand string, variabl
 	newAttrs.CheckCommand = "hostalive"
 	newAttrs.Vars = variables
 	newAttrs.Templates = templates
-	newAttrs.Groups = groups
+        newAttrs.Groups = groups
 
 	var newHost HostStruct
 	newHost.Name = hostname
@@ -53,7 +53,7 @@ func (server *Server) CreateHost(hostname, address, checkCommand string, variabl
 		return nil, marshalErr
 	}
 
-	//fmt.Printf("<payload> %s\n", payloadJSON)
+	fmt.Printf("<payload> %s\n", payloadJSON)
 
 	// Make the API request to create the hosts.
 	results, err := server.NewAPIRequest("PUT", "/objects/hosts/"+hostname, []byte(payloadJSON))
