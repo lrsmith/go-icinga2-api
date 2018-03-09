@@ -27,7 +27,8 @@ func TestCreateSimpleHost(t *testing.T) {
 	hostname := "go-icinga2-api-1"
 	IPAddress := "127.0.0.2"
 	CheckCommand := "CheckItRealGood"
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, nil, nil, nil)
+
+	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, nil, nil, nil )
 
 	if err != nil {
 		t.Error(err)
