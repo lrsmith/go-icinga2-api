@@ -6,6 +6,7 @@ var Icinga2_Server = Server{"icinga-test", "icinga", "https://127.0.0.1:5665/v1"
 
 func TestConnect(t *testing.T) {
 
+	var Icinga2_Server = Server{"icinga-test", "icinga", "https://127.0.0.1:5665/v1", true, nil}
 	Icinga2_Server.Connect()
 
 	if Icinga2_Server.httpClient == nil {
@@ -15,7 +16,7 @@ func TestConnect(t *testing.T) {
 
 func TestConnectServerUnavailable(t *testing.T) {
 
-	var Icinga2_Server = Server{"root", "icinga", "https://127.0.0.1:4665/v1", true, nil}
+	var Icinga2_Server = Server{"icinga-test", "icinga", "https://127.0.0.1:4665/v1", true, nil}
 	err := Icinga2_Server.Connect()
 
 	if err == nil {

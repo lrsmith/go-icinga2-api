@@ -1,6 +1,8 @@
 package iapi
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestGetValidHostgroup(t *testing.T) {
 
@@ -55,7 +57,7 @@ func TestDeleteHostgroupNonAPI(t *testing.T) {
 	name := "linux-servers"
 
 	err := Icinga2_Server.DeleteHostgroup(name)
-	if err.Error() != "Object cannot be deleted because it was not created using the API." {
+	if err.Error() != "500 One or more objects could not be deleted" {
 		t.Error(err)
 	}
 }

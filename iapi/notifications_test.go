@@ -29,14 +29,14 @@ func TestGetInvalidNotification(t *testing.T) {
 func TestCreateNotificationCommandDNE(t *testing.T) {
 
 	hostname := "host"
-	notificationname := hostname+"!"+hostname
+	notificationname := hostname + "!" + hostname
 	command := "invalid-command"
 	servicename := ""
 	interval := 1800
 
 	_, err := Icinga2_Server.CreateNotification(notificationname, hostname, command, servicename, interval, nil, nil, nil)
 
-	if !strings.Contains(err.Error(), "type 'NotificationCommand' does not exist.") {
+	if !strings.Contains(err.Error(), "500 Object could not be created") {
 		t.Error(err)
 	}
 }
@@ -47,14 +47,14 @@ func TestCreateNotificationCommandDNE(t *testing.T) {
 func TestCreateNotificationHostDNE(t *testing.T) {
 
 	hostname := "host-dne"
-	notificationname := hostname+"!"+hostname
+	notificationname := hostname + "!" + hostname
 	command := "mail-host-notification"
 	servicename := ""
 	interval := 1800
 
 	_, err := Icinga2_Server.CreateNotification(notificationname, hostname, command, servicename, interval, nil, nil, nil)
 
-	if !strings.Contains(err.Error(), "type 'Host' does not exist.") {
+	if !strings.Contains(err.Error(), "500 Object could not be created") {
 		t.Error(err)
 	}
 }
@@ -69,7 +69,7 @@ func TestCreateNotificationInvalidName(t *testing.T) {
 
 	_, err := Icinga2_Server.CreateNotification(notificationname, hostname, command, servicename, interval, nil, nil, nil)
 
-	if !strings.Contains(err.Error(), "Invalid Notification name.") {
+	if !strings.Contains(err.Error(), "500 Object could not be created") {
 		t.Error(err)
 	}
 }
@@ -78,17 +78,16 @@ func TestCreateNotificationUserDNE(t *testing.T) {
 
 	hostname := "host"
 	group := []string{"linux-servers"}
-	notificationname := hostname+"!"+hostname
+	notificationname := hostname + "!" + hostname
 	command := "mail-host-notification"
 	servicename := ""
 	interval := 1800
 	users := []string{"user-dne"}
 
-
-    _, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "hostalive", nil, nil, group)
+	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "hostalive", nil, nil, group)
 	_, err := Icinga2_Server.CreateNotification(notificationname, hostname, command, servicename, interval, users, nil, nil)
 
-	if !strings.Contains(err.Error(), "type 'User' does not exist.") {
+	if !strings.Contains(err.Error(), "500 Object could not be created") {
 		t.Error(err)
 	}
 }
@@ -97,14 +96,14 @@ func TestCreateHostNotification(t *testing.T) {
 
 	hostname := "host"
 	groups := []string{"linux-servers"}
-	notificationname := hostname+"!"+hostname
+	notificationname := hostname + "!" + hostname
 	command := "mail-host-notification"
 	servicename := ""
 	interval := 1800
 	username := "user"
 
-    _, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "hostalive", nil, nil, groups)
-    _, _ = Icinga2_Server.CreateUser(username, "user@example.com")
+	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "hostalive", nil, nil, groups)
+	_, _ = Icinga2_Server.CreateUser(username, "user@example.com")
 	_, err := Icinga2_Server.CreateNotification(notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
 
 	if err != nil {
@@ -115,7 +114,7 @@ func TestCreateHostNotification(t *testing.T) {
 func TestCreateHostNotificationAlreadyExists(t *testing.T) {
 
 	hostname := "host"
-	notificationname := hostname+"!"+hostname
+	notificationname := hostname + "!" + hostname
 	command := "mail-host-notification"
 	servicename := ""
 	interval := 1800
@@ -123,7 +122,7 @@ func TestCreateHostNotificationAlreadyExists(t *testing.T) {
 
 	_, err := Icinga2_Server.CreateNotification(notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
 
-	if !strings.HasSuffix(err.Error(), " already exists.") {
+	if !strings.HasSuffix(err.Error(), "500 Object could not be created") {
 		t.Error(err)
 	}
 }
@@ -133,13 +132,13 @@ func TestCreateServiceNotification(t *testing.T) {
 	hostname := "host"
 	servicename := "test"
 	check_command := "random"
-	notificationname := hostname+"!"+servicename+"!"+hostname+"-"+servicename
+	notificationname := hostname + "!" + servicename + "!" + hostname + "-" + servicename
 	command := "mail-service-notification"
 	interval := 1800
 	username := "user"
 
-    _, _ = Icinga2_Server.CreateUser(username, "user@example.com")
-    _, _ = Icinga2_Server.CreateService(servicename, hostname, check_command,nil)
+	_, _ = Icinga2_Server.CreateUser(username, "user@example.com")
+	_, _ = Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
 	_, err := Icinga2_Server.CreateNotification(notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
 
 	if err != nil {
@@ -152,16 +151,16 @@ func TestCreateServiceNotificationAlreadyExists(t *testing.T) {
 	hostname := "host"
 	servicename := "test"
 	check_command := "random"
-	notificationname := hostname+"!"+servicename+"!"+hostname+"-"+servicename
+	notificationname := hostname + "!" + servicename + "!" + hostname + "-" + servicename
 	command := "mail-service-notification"
 	interval := 1800
 	username := "user"
 
-    _, _ = Icinga2_Server.CreateUser(username, "user@example.com")
-    _, _ = Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
+	_, _ = Icinga2_Server.CreateUser(username, "user@example.com")
+	_, _ = Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
 	_, err := Icinga2_Server.CreateNotification(notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
 
-	if !strings.HasSuffix(err.Error(), " already exists.") {
+	if !strings.HasSuffix(err.Error(), "500 Object could not be created") {
 		t.Error(err)
 	}
 }
@@ -170,7 +169,7 @@ func TestDeleteServiceNotification(t *testing.T) {
 
 	hostname := "host"
 	servicename := "test"
-	notificationname := hostname+"!"+servicename+"!"+hostname+"-"+servicename
+	notificationname := hostname + "!" + servicename + "!" + hostname + "-" + servicename
 
 	err := Icinga2_Server.DeleteNotification(notificationname)
 
@@ -183,7 +182,7 @@ func TestDeleteServiceNotificationDNE(t *testing.T) {
 
 	hostname := "host"
 	servicename := "test"
-	notificationname := hostname+"!"+servicename+"!"+hostname+"-"+servicename
+	notificationname := hostname + "!" + servicename + "!" + hostname + "-" + servicename
 
 	err := Icinga2_Server.DeleteNotification(notificationname)
 
@@ -195,12 +194,12 @@ func TestDeleteServiceNotificationDNE(t *testing.T) {
 func TestDeleteHostNotification(t *testing.T) {
 
 	hostname := "host"
-	notificationname := hostname+"!"+hostname
+	notificationname := hostname + "!" + hostname
 	username := "user"
 
 	err := Icinga2_Server.DeleteNotification(notificationname)
-    _ = Icinga2_Server.DeleteHost(hostname)
-    _ = Icinga2_Server.DeleteUser(username)
+	_ = Icinga2_Server.DeleteHost(hostname)
+	_ = Icinga2_Server.DeleteUser(username)
 
 	if err != nil {
 		t.Error(err)
@@ -210,7 +209,7 @@ func TestDeleteHostNotification(t *testing.T) {
 func TestDeleteHostNotificationDNE(t *testing.T) {
 
 	hostname := "host"
-	notificationname := hostname+"!"+hostname
+	notificationname := hostname + "!" + hostname
 
 	err := Icinga2_Server.DeleteNotification(notificationname)
 

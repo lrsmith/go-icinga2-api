@@ -42,7 +42,7 @@ func TestCreateUserAlreadyExists(t *testing.T) {
 
 	_, err := Icinga2_Server.CreateUser(username, "")
 
-	if !strings.HasSuffix(err.Error(), " already exists.") {
+	if !strings.HasSuffix(err.Error(), "500 Object could not be created") {
 		t.Error(err)
 	}
 }
