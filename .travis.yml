@@ -9,7 +9,7 @@ services:
   - docker
 
 before_install:
-  - make start_test_icinga2
+  - make docker_setup
   - docker ps -a
 
 script: go test -v ./...
