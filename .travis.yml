@@ -10,10 +10,10 @@ services:
 
 before_install:
   - make docker_start
+  - sleep 30
 
-script: 
+script:
   - password=$(docker exec icinga2 bash -c 'grep password /etc/icinga2/conf.d/api-users.conf' | awk -F'"' '{ print $2}')
-  - go clean -testcache
   - export ICINGA2_API_PASSWORD="$password" && go test -v ./...
 
 after_success:
