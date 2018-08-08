@@ -9,10 +9,12 @@ services:
   - docker
 
 before_install:
-  - make docker_setup
-  - docker ps -a
+  - make docker_start
 
-script: go test -v ./...
+script: 
+  - password=$(docker exec icinga2 bash -c 'grep password /etc/icinga2/conf.d/api-users.conf' | awk -F'"' '{ print $2}')
+  - export ICINGA2_API_PASSWORD="$password"
+  - go test -v ./...
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
