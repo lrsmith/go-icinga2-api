@@ -32,11 +32,12 @@ func (server *Server) GetService(servicename, hostname string) ([]ServiceStruct,
 }
 
 // CreateService ...
-func (server *Server) CreateService(servicename, hostname, checkCommand string, variables map[string]string) ([]ServiceStruct, error) {
+func (server *Server) CreateService(servicename, hostname, checkCommand string, variables map[string]string, templates []string) ([]ServiceStruct, error) {
 
 	var newAttrs ServiceAttrs
 	newAttrs.CheckCommand = checkCommand
 	newAttrs.Vars = variables
+	newAttrs.Templates = templates
 
 	var newService ServiceStruct
 	newService.Attrs = newAttrs
