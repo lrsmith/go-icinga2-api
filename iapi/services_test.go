@@ -38,7 +38,7 @@ func TestCreateServiceHostDNE(t *testing.T) {
 	servicename := "ssh"
 	check_command := "ssh"
 
-	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
+	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, nil, nil)
 
 	if !strings.Contains(err.Error(), "500 Object could not be created") {
 		t.Error(err)
@@ -57,7 +57,7 @@ func TestCreateHostAndService(t *testing.T) {
 
 	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "hostalive", nil, nil, Group)
 
-	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
+	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, nil, nil)
 
 	if err != nil {
 		t.Errorf("Error : Failed to create service %s!%s : %s", hostname, servicename, err)
@@ -75,7 +75,7 @@ func TestCreateServiceWithVariables(t *testing.T) {
 	variables := make(map[string]string)
 	variables["vars.nrpe_command"] = "check_load"
 
-	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, variables)
+	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, variables, nil)
 
 	if err != nil {
 		t.Errorf("Error : Failed to create service %s!%s : %s", hostname, servicename, err)
