@@ -24,7 +24,7 @@ type ServiceAttrs struct {
 	//	DisplayName   string        `json:"display_name"`
 	//	Groups        []interface{} `json:"groups"`
 	//Name string `json:"name"`
-	//	Templates     []string      `json:"templates"`
+	Templates    []string    `json:"templates"`
 	//	Type string `json:"type"`
 	Vars          interface{}   `json:"vars"`
 }
