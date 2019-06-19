@@ -84,7 +84,7 @@ func TestCreateNotificationUserDNE(t *testing.T) {
 	interval := 1800
 	users := []string{"user-dne"}
 
-	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "hostalive", nil, nil, group)
+	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "", "hostalive", nil, nil, group)
 	_, err := Icinga2_Server.CreateNotification(notificationname, hostname, command, servicename, interval, users, nil, nil)
 
 	if !strings.Contains(err.Error(), "500 Object could not be created") {
@@ -102,7 +102,7 @@ func TestCreateHostNotification(t *testing.T) {
 	interval := 1800
 	username := "user"
 
-	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "hostalive", nil, nil, groups)
+	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "", "hostalive", nil, nil, groups)
 	_, _ = Icinga2_Server.CreateUser(username, "user@example.com")
 	_, err := Icinga2_Server.CreateNotification(notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
 

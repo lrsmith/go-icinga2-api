@@ -55,7 +55,7 @@ func TestCreateHostAndService(t *testing.T) {
 	check_command := "ssh"
 	Group := []string{"linux-servers"}
 
-	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "hostalive", nil, nil, Group)
+	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "", "hostalive", nil, nil, Group)
 
 	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
 
