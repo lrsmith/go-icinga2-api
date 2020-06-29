@@ -63,7 +63,6 @@ func (server *Server) CreateService(servicename, hostname, checkCommand string, 
 
 // DeleteService ...
 func (server *Server) DeleteService(servicename, hostname string) error {
-
 	results, err := server.NewAPIRequest("DELETE", "/objects/services/"+hostname+"!"+servicename+"?cascade=1", nil)
 	if err != nil {
 		return err
@@ -71,8 +70,7 @@ func (server *Server) DeleteService(servicename, hostname string) error {
 
 	if results.Code == 200 {
 		return nil
-	} else {
-		return fmt.Errorf("%s", results.ErrorString)
 	}
 
+	return fmt.Errorf("%s", results.ErrorString)
 }
