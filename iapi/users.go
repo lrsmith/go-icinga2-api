@@ -59,7 +59,6 @@ func (server *Server) CreateUser(name, email string) ([]UserStruct, error) {
 	}
 
 	return nil, fmt.Errorf("%s", results.ErrorString)
-
 }
 
 // DeleteUser ...

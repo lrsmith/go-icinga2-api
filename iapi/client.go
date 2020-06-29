@@ -66,8 +66,6 @@ func (server *Server) Connect() error {
 // NewAPIRequest ...
 func (server *Server) NewAPIRequest(method, APICall string, jsonString []byte) (*APIResult, error) {
 
-	var results APIResult
-
 	fullURL := server.BaseURL + APICall
 
 	t := &http.Transport{
@@ -92,14 +90,16 @@ func (server *Server) NewAPIRequest(method, APICall string, jsonString []byte) (
 
 	response, doErr := server.httpClient.Do(request)
 	if doErr != nil {
-		results.Code = 0
-		results.Status = "Error : Request to server failed : " + doErr.Error()
-		results.ErrorString = doErr.Error()
+		results := APIResult{
+			Code:        0,
+			Status:      "Error : Request to server failed : " + doErr.Error(),
+			ErrorString: doErr.Error(),
+		}
 		return &results, doErr
 	}
-
 	defer response.Body.Close()
 
+	var results APIResult
 	if decodeErr := json.NewDecoder(response.Body).Decode(&results); decodeErr != nil {
 		return nil, decodeErr
 	}

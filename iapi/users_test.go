@@ -1,7 +1,6 @@
 package iapi
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -19,7 +18,7 @@ func TestUser(t *testing.T) {
 		t.Run("UserAlreadyExists", func(t *testing.T) {
 			username := "test-user"
 			_, err := icingaServer.CreateUser(username, "")
-			if !strings.HasSuffix(err.Error(), "500 Object could not be created") {
+			if err == nil {
 				t.Error(err)
 			}
 		})
