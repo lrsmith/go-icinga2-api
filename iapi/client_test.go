@@ -1,7 +1,9 @@
 package iapi
 
-import "testing"
-import "os"
+import (
+	"os"
+	"testing"
+)
 
 var ICINGA2_API_PASSWORD = os.Getenv("ICINGA2_API_PASSWORD")
 
