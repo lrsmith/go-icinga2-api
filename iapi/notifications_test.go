@@ -138,7 +138,7 @@ func TestCreateServiceNotification(t *testing.T) {
 	username := "user"
 
 	_, _ = Icinga2_Server.CreateUser(username, "user@example.com")
-	_, _ = Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
+	_, _ = Icinga2_Server.CreateService(servicename, hostname, check_command, nil, nil)
 	_, err := Icinga2_Server.CreateNotification(notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
 
 	if err != nil {
@@ -157,7 +157,7 @@ func TestCreateServiceNotificationAlreadyExists(t *testing.T) {
 	username := "user"
 
 	_, _ = Icinga2_Server.CreateUser(username, "user@example.com")
-	_, _ = Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
+	_, _ = Icinga2_Server.CreateService(servicename, hostname, check_command, nil, nil)
 	_, err := Icinga2_Server.CreateNotification(notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
 
 	if !strings.HasSuffix(err.Error(), "500 Object could not be created") {
