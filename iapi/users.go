@@ -47,8 +47,6 @@ func (server *Server) CreateUser(name, email string) ([]UserStruct, error) {
 		return nil, marshalErr
 	}
 
-	//fmt.Printf("<payload> %s\n", payloadJSON)
-
 	// Make the API request to create the users.
 	results, err := server.NewAPIRequest("PUT", "/objects/users/"+name, []byte(payloadJSON))
 	if err != nil {
@@ -66,7 +64,6 @@ func (server *Server) CreateUser(name, email string) ([]UserStruct, error) {
 
 // DeleteUser ...
 func (server *Server) DeleteUser(name string) error {
-
 	results, err := server.NewAPIRequest("DELETE", "/objects/users/"+name+"?cascade=1", nil)
 	if err != nil {
 		return err
@@ -74,7 +71,7 @@ func (server *Server) DeleteUser(name string) error {
 
 	if results.Code == 200 {
 		return nil
-	} else {
-		return fmt.Errorf("%s", results.ErrorString)
 	}
+
+	return fmt.Errorf("%s", results.ErrorString)
 }

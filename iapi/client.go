@@ -18,12 +18,10 @@ type Server struct {
 	httpClient         *http.Client
 }
 
-// func New ...
 func New(username, password, url string, allowUnverifiedSSL bool) (*Server, error) {
 	return &Server{username, password, url, allowUnverifiedSSL, nil}, nil
 }
 
-// func Config ...
 func (server *Server) Config(username, password, url string, allowUnverifiedSSL bool) (*Server, error) {
 
 	// TODO : Add code to verify parameters
@@ -63,7 +61,6 @@ func (server *Server) Connect() error {
 	defer response.Body.Close()
 
 	return nil
-
 }
 
 // NewAPIRequest ...
