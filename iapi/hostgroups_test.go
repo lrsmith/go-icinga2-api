@@ -48,7 +48,7 @@ func TestHostgroups(t *testing.T) {
 		t.Run("HostgroupNonAPI", func(t *testing.T) {
 			name := "linux-servers"
 			err := icingaServer.DeleteHostgroup(name)
-			if err.Error() != "500 One or more objects could not be deleted" {
+			if err == nil {
 				t.Error(err)
 			}
 		})
