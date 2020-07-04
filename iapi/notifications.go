@@ -52,8 +52,6 @@ func (server *Server) CreateNotification(name, hostname, command, servicename st
 		return nil, marshalErr
 	}
 
-	//fmt.Printf("<payload> %s\n", payloadJSON)
-
 	// Make the API request to create the hosts.
 	results, err := server.NewAPIRequest("PUT", "/objects/notifications/"+name, []byte(payloadJSON))
 	if err != nil {
