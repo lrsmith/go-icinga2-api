@@ -28,7 +28,7 @@ func TestCreateSimpleHost(t *testing.T) {
 	IPAddress := "127.0.0.2"
 	CheckCommand := "hostalive"
 
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, nil, nil, nil )
+	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, nil, nil, nil)
 
 	if err != nil {
 		t.Error(err)
@@ -78,21 +78,21 @@ func TestCreateHostWithTemplates(t *testing.T) {
 }
 
 func TestCreateHostWithGroup(t *testing.T) {
-        hostname := "go-icinga2-api-2"
-        IPAddress := "127.0.0.3"
-        CheckCommand := "hostalive"
-        Group := []string{"linux-servers"}
+	hostname := "go-icinga2-api-2"
+	IPAddress := "127.0.0.3"
+	CheckCommand := "hostalive"
+	Group := []string{"linux-servers"}
 
-        _, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, nil, nil, Group)
-        if err != nil {
-                t.Error(err)
-        }
+	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, nil, nil, Group)
+	if err != nil {
+		t.Error(err)
+	}
 
-        // Delete host after creating it.
-        deleteErr := Icinga2_Server.DeleteHost(hostname)
-        if deleteErr != nil {
-                t.Error(err)
-        }
+	// Delete host after creating it.
+	deleteErr := Icinga2_Server.DeleteHost(hostname)
+	if deleteErr != nil {
+		t.Error(err)
+	}
 }
 func TestDeleteHost(t *testing.T) {
 
