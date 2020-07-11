@@ -9,8 +9,10 @@ import (
 // GetHostgroup ...
 func (server *Server) GetHostgroup(name string) ([]HostgroupStruct, error) {
 
-	var hostgroups []HostgroupStruct
-	results, err := server.NewAPIRequest("GET", "/objects/hostgroups/"+name, nil)
+// HostgroupParams defines all available options related to updating a HostGroup.
+type HostgroupParams struct {
+	DisplayName string
+}
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +69,34 @@ func (server *Server) CreateHostgroup(name, displayName string) ([]HostgroupStru
 	}
 
 	return nil, fmt.Errorf("%s", results.ErrorString)
+// UpdateHostgroup updates a HostGroup with its params.
+func (server *Server) UpdateHostgroup(name string, params *HostgroupParams) ([]HostgroupStruct, error) {
+	attrs := make(map[string]interface{})
+	if params.DisplayName != "" {
+		attrs["display_name"] = params.DisplayName
+	}
 
+	attrsMap := map[string]interface{}{
+		"attrs": attrs,
+	}
+
+	attrsBody, err := json.Marshal(attrsMap)
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint := fmt.Sprintf("%v/%v", hostgroupEndpoint, name)
+	results, err := server.NewAPIRequest(http.MethodPost, endpoint, attrsBody)
+	if err != nil {
+		return nil, err
+	}
+
+	if results.Code == http.StatusOK {
+		hostgroups, err := server.GetHostgroup(name)
+		return hostgroups, err
+	}
+
+	return nil, fmt.Errorf("%s", results.ErrorString)
 }
 
 // DeleteHostgroup ...
