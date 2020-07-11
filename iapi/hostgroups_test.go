@@ -2,8 +2,6 @@ package iapi
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestHostgroups(t *testing.T) {
@@ -41,7 +39,9 @@ func TestHostgroups(t *testing.T) {
 		hostgroupName := "someHostgroupName"
 		firstDisplayName := "some Hostgroup Display Name"
 		_, err := icingaServer.CreateHostgroup(hostgroupName, firstDisplayName)
-		assert.NoError(t, err)
+		if err != nil {
+			t.Error(err)
+		}
 		defer icingaServer.DeleteHostgroup(hostgroupName)
 
 		secondDisplayName := "other hostgroup display name"
@@ -49,8 +49,12 @@ func TestHostgroups(t *testing.T) {
 			DisplayName: secondDisplayName,
 		}
 		updatedHostgroup, err := icingaServer.UpdateHostgroup(hostgroupName, params)
-		assert.NoError(t, err)
-		assert.Equal(t, secondDisplayName, updatedHostgroup[0].Attrs.DisplayName)
+		if err != nil {
+			t.Error(err)
+		}
+		if secondDisplayName != updatedHostgroup[0].Attrs.DisplayName {
+			t.Errorf("expected display_name fields to not be equal, got equal")
+		}
 	})
 
 	t.Run("Delete", func(t *testing.T) {
