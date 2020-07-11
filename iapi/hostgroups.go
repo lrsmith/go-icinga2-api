@@ -4,30 +4,35 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 )
 
-// GetHostgroup ...
-func (server *Server) GetHostgroup(name string) ([]HostgroupStruct, error) {
+const hostgroupEndpoint = "/objects/hostgroups"
 
 // HostgroupParams defines all available options related to updating a HostGroup.
 type HostgroupParams struct {
 	DisplayName string
 }
+
+// GetHostgroup fetches a HostGroup by its name.
+func (server *Server) GetHostgroup(name string) ([]HostgroupStruct, error) {
+	endpoint := fmt.Sprintf("%v/%v", hostgroupEndpoint, name)
+	results, err := server.NewAPIRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// Contents of the results is an interface object. Need to convert it to json first.
-	jsonStr, marshalErr := json.Marshal(results.Results)
-	if marshalErr != nil {
-		return nil, marshalErr
+	jsonStr, err := json.Marshal(results.Results)
+	if err != nil {
+		return nil, err
 	}
 
 	// then the JSON can be pushed into the appropriate struct.
 	// Note : Results is a slice so much push into a slice.
-
-	if unmarshalErr := json.Unmarshal(jsonStr, &hostgroups); unmarshalErr != nil {
-		return nil, unmarshalErr
+	var hostgroups []HostgroupStruct
+	if err := json.Unmarshal(jsonStr, &hostgroups); err != nil {
+		return nil, err
 	}
 
 	if len(hostgroups) == 0 {
@@ -39,12 +44,10 @@ type HostgroupParams struct {
 	}
 
 	return hostgroups, err
-
 }
 
-// CreateHostgroup ...
+// CreateHostgroup creates a new HostGroup with its name and display name.
 func (server *Server) CreateHostgroup(name, displayName string) ([]HostgroupStruct, error) {
-
 	var newAttrs HostgroupAttrs
 	newAttrs.DisplayName = displayName
 
@@ -53,22 +56,25 @@ func (server *Server) CreateHostgroup(name, displayName string) ([]HostgroupStru
 	newHostgroup.Type = "Hostgroup"
 	newHostgroup.Attrs = newAttrs
 
-	payloadJSON, marshalErr := json.Marshal(newHostgroup)
-	if marshalErr != nil {
-		return nil, marshalErr
-	}
-
-	results, err := server.NewAPIRequest("PUT", "/objects/hostgroups/"+name, []byte(payloadJSON))
+	payloadJSON, err := json.Marshal(newHostgroup)
 	if err != nil {
 		return nil, err
 	}
 
-	if results.Code == 200 {
+	endpoint := fmt.Sprintf("%v/%v", hostgroupEndpoint, name)
+	results, err := server.NewAPIRequest(http.MethodPut, endpoint, payloadJSON)
+	if err != nil {
+		return nil, err
+	}
+
+	if results.Code == http.StatusOK {
 		hostgroups, err := server.GetHostgroup(name)
 		return hostgroups, err
 	}
 
 	return nil, fmt.Errorf("%s", results.ErrorString)
+}
+
 // UpdateHostgroup updates a HostGroup with its params.
 func (server *Server) UpdateHostgroup(name string, params *HostgroupParams) ([]HostgroupStruct, error) {
 	attrs := make(map[string]interface{})
@@ -99,14 +105,15 @@ func (server *Server) UpdateHostgroup(name string, params *HostgroupParams) ([]H
 	return nil, fmt.Errorf("%s", results.ErrorString)
 }
 
-// DeleteHostgroup ...
+// DeleteHostgroup deletes a HostGroup by its name.
 func (server *Server) DeleteHostgroup(name string) error {
-	results, err := server.NewAPIRequest("DELETE", "/objects/hostgroups/"+name, nil)
+	endpoint := fmt.Sprintf("%v/%v", hostgroupEndpoint, name)
+	results, err := server.NewAPIRequest(http.MethodDelete, endpoint, nil)
 	if err != nil {
 		return err
 	}
 
-	if results.Code == 200 {
+	if results.Code == http.StatusOK {
 		return nil
 	}
 
