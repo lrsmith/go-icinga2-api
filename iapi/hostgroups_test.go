@@ -2,6 +2,8 @@ package iapi
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHostgroups(t *testing.T) {
@@ -33,6 +35,22 @@ func TestHostgroups(t *testing.T) {
 				t.Error(err)
 			}
 		})
+	})
+
+	t.Run("Update", func(t *testing.T) {
+		hostgroupName := "someHostgroupName"
+		firstDisplayName := "some Hostgroup Display Name"
+		_, err := icingaServer.CreateHostgroup(hostgroupName, firstDisplayName)
+		assert.NoError(t, err)
+		defer icingaServer.DeleteHostgroup(hostgroupName)
+
+		secondDisplayName := "other hostgroup display name"
+		params := &HostgroupParams{
+			DisplayName: secondDisplayName,
+		}
+		updatedHostgroup, err := icingaServer.UpdateHostgroup(hostgroupName, params)
+		assert.NoError(t, err)
+		assert.Equal(t, secondDisplayName, updatedHostgroup[0].Attrs.DisplayName)
 	})
 
 	t.Run("Delete", func(t *testing.T) {
