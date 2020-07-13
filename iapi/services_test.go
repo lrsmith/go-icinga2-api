@@ -1,158 +1,145 @@
 package iapi
 
 import (
-	"strings"
 	"testing"
 )
 
-func TestGetValidService(t *testing.T) {
-
-	hostname := "c1-mysql-1"
-	servicename := "ssh"
-
-	_, err := Icinga2_Server.GetService(servicename, hostname)
-
+func TestServices(t *testing.T) {
+	icingaServer := Server{"root", ICINGA2_API_PASSWORD, "https://127.0.0.1:5665/v1", true, nil}
+	testHostName := "c1-mysql-1"
+	_, err := icingaServer.CreateHost(testHostName, "127.0.0.1", nil, "hostalive", nil, nil, nil)
 	if err != nil {
 		t.Error(err)
 	}
-}
+	defer func() {
+		_ = icingaServer.DeleteHost(testHostName)
+	}()
 
-func TestGetInvalidService(t *testing.T) {
+	t.Run("CreateService", func(t *testing.T) {
+		// Try and create a service for a host that does not exist.
+		// Should fail with an error about the host not existing.
+		t.Run("HostDoNotExists", func(t *testing.T) {
+			nonExistingHost := "c1-host-dne-1"
+			servicename := "ssh"
+			checkCommand := "ssh"
 
-	hostname := "c1-mysql-1"
-	servicename := "foo"
+			_, err := icingaServer.CreateService(servicename, nonExistingHost, checkCommand, nil, nil)
+			if err == nil {
+				t.Error("ServiceHostDoNotExists: expected error returning, got nil")
+			}
+		})
 
-	_, err := Icinga2_Server.GetService(servicename, hostname)
+		// Create a host and service via the API
+		t.Run("HostAndService", func(t *testing.T) {
+			servicename := "ssh"
+			checkCommand := "ssh"
 
-	if err != nil {
-		t.Error(err)
-	}
-}
+			_, err := icingaServer.CreateService(servicename, testHostName, checkCommand, nil, nil)
+			if err != nil {
+				t.Errorf("Error : Failed to create service %s!%s : %s", testHostName, servicename, err)
+			}
+		})
 
-// func TestCreateServiceHostDNE
-// Try and create a service for a host that does not exist.
-// Should fail with an error about the host not existing.
-func TestCreateServiceHostDNE(t *testing.T) {
+		t.Run("WithVariables", func(t *testing.T) {
+			servicename := "nrpe"
+			checkCommand := "nrpe"
+			variables := make(map[string]string)
+			variables["vars.nrpe_command"] = "check_load"
 
-	hostname := "c1-host-dne-1"
-	servicename := "ssh"
-	check_command := "ssh"
+			_, err := icingaServer.CreateService(servicename, testHostName, checkCommand, variables, nil)
+			if err != nil {
+				t.Errorf("Error : Failed to create service %s!%s : %s", testHostName, servicename, err)
+			}
+		})
 
-	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
+		t.Run("WithTemplates", func(t *testing.T) {
+			servicename := "nrpe-check"
+			checkCommand := "nrpe"
+			variables := make(map[string]string)
+			variables["vars.nrpe_command"] = "check_load"
+			serviceTemplates := []string{"generic-service", "holiwi"}
 
-	if !strings.Contains(err.Error(), "500 Object could not be created") {
-		t.Error(err)
-	}
+			_, err = icingaServer.CreateService(servicename, testHostName, checkCommand, variables, serviceTemplates)
+			if err != nil {
+				t.Errorf("Error : Failed to create service %s!%s : %s", testHostName, servicename, err)
+			}
+		})
 
-}
+		// Test creating a host/service pair that already exists. Should get error about it already existing.
+		t.Run("AlreadyExists", func(t *testing.T) {
+			servicename := "ssh"
+			checkCommand := "ssh"
 
-// func TestCreateHostAndService
-// Create a host and service via the API
-func TestCreateHostAndService(t *testing.T) {
+			_, err = icingaServer.CreateService(servicename, testHostName, checkCommand, nil, nil)
+			if err == nil {
+				t.Error("TestCreateServiceAlreadyExists: expected error returning, got nil")
+			}
+		})
+	})
 
-	hostname := "c1-test-1"
-	servicename := "ssh"
-	check_command := "ssh"
-	Group := []string{"linux-servers"}
+	t.Run("ReadService", func(t *testing.T) {
+		t.Run("ValidService", func(t *testing.T) {
+			servicename := "ssh"
+			_, err := icingaServer.GetService(servicename, testHostName)
+			if err != nil {
+				t.Error(err)
+			}
+		})
 
-	_, _ = Icinga2_Server.CreateHost(hostname, "127.0.0.1", "", "hostalive", nil, nil, Group)
+		t.Run("InvalidService", func(t *testing.T) {
+			servicename := "foo"
+			_, err := icingaServer.GetService(servicename, testHostName)
+			if err != nil {
+				t.Error(err)
+			}
+		})
+	})
 
-	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
+	t.Run("DeleteService", func(t *testing.T) {
+		// Delete a service which was create via the API.
+		// Should not get an error
+		t.Run("HostAndService", func(t *testing.T) {
+			servicename := "ssh"
 
-	if err != nil {
-		t.Errorf("Error : Failed to create service %s!%s : %s", hostname, servicename, err)
-	}
+			err := icingaServer.DeleteService(servicename, testHostName)
+			if err != nil {
+				t.Error(err)
+			}
+		})
 
-}
+		// Try and delete a service, where the host does not exists.
+		// Should get an error abot no object found
+		t.Run("ServiceHostDoNotExists", func(t *testing.T) {
+			hostname := "c1-test-1"
+			servicename := "ssh"
 
-// func TestCreateServiceWithVariables
-// Create a service (with variables) via the API
-func TestCreateServiceWithVariables(t *testing.T) {
+			err := icingaServer.DeleteService(servicename, hostname)
+			if err.Error() != "No objects found." {
+				t.Error(err)
+			}
+		})
 
-	hostname := "c1-test-1"
-	servicename := "nrpe"
-	check_command := "nrpe"
-	variables := make(map[string]string)
-	variables["vars.nrpe_command"] = "check_load"
+		// Try and delete a service, where the host exists but the service does not.
+		// Should get an error abot no object found
+		t.Run("ServiceDoNotExists", func(t *testing.T) {
+			servicename := "foo"
+			err := icingaServer.DeleteService(servicename, testHostName)
+			if err.Error() != "No objects found." {
+				t.Error(err)
+			}
+		})
 
-	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, variables)
+		// Services that were not created via the API, cannot be deleted via the API
+		// Should get an error about not being created via the API
+		t.Run("ServiceNonAPI", func(t *testing.T) {
+			hostname := "docker-icinga2"
+			servicename := "random-001"
 
-	if err != nil {
-		t.Errorf("Error : Failed to create service %s!%s : %s", hostname, servicename, err)
-	}
-}
+			err := icingaServer.DeleteService(servicename, hostname)
+			if err.Error() != "No objects found." {
+				t.Error(err)
+			}
+		})
+	})
 
-// func TestCreateServiceAlreadyExists
-// Test creating a host/service pair that already exists. Should get error about it already existing.
-func TestCreateServiceAlreadyExists(t *testing.T) {
-
-	hostname := "c1-test-1"
-	servicename := "ssh"
-	check_command := "ssh"
-
-	_, err := Icinga2_Server.CreateService(servicename, hostname, check_command, nil)
-
-	if !strings.HasSuffix(err.Error(), "500 Object could not be created") {
-		t.Error(err)
-	}
-
-}
-
-// func TestDeleteHostAndService
-// Delete a service which was create via the API. NOTE : Host also is created via the API in previous test.
-// Should not get an error
-func TestDeleteHostAndService(t *testing.T) {
-
-	hostname := "c1-test-1"
-	servicename := "ssh"
-
-	err := Icinga2_Server.DeleteService(servicename, hostname)
-	if err != nil {
-		_ = Icinga2_Server.DeleteHost(hostname)
-		t.Error(err)
-	}
-
-	_ = Icinga2_Server.DeleteHost(hostname)
-}
-
-// func TestDeleteServiceHostDNE
-// Try and delet a service, where the host does not exists.
-// Should get an error abot no object found
-func TestDeleteServiceHostDNE(t *testing.T) {
-
-	hostname := "c1-test-1"
-	servicename := "ssh"
-
-	err := Icinga2_Server.DeleteService(servicename, hostname)
-	if err.Error() != "No objects found." {
-		t.Error(err)
-	}
-}
-
-// func TestDeleteServiceDNS
-// Try and delete a service, where the host exists but the service does not.
-// Should get an error abot no object found
-func TestDeleteServiceDNE(t *testing.T) {
-
-	hostname := "c1-mysql-1"
-	servicename := "foo"
-
-	err := Icinga2_Server.DeleteService(servicename, hostname)
-	if err.Error() != "No objects found." {
-		t.Error(err)
-	}
-}
-
-// func TestDeleteServiceNonAPI
-// Services that were not created via the API, cannot be deleted via the API
-// Should get an error about not being created via the API
-func TestDeleteServiceNonAPI(t *testing.T) {
-
-	hostname := "docker-icinga2"
-	servicename := "random-001"
-
-	err := Icinga2_Server.DeleteService(servicename, hostname)
-	if err.Error() != "No objects found." {
-		t.Error(err)
-	}
 }

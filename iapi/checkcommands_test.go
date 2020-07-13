@@ -49,22 +49,20 @@ func TestDeleteCheckcommand(t *testing.T) {
 }
 
 func TestCreateCheckcommandArgs(t *testing.T) {
-
 	name := "check-command-docker-args"
 	command := "/dev/null"
-	command_args := make(map[string]string)
-	command_args["-I"] = "Iarg"
-	command_args["-X"] = "Xarg"
+	commandArgs := make(map[string]string)
+	commandArgs["-I"] = "Iarg"
+	commandArgs["-X"] = "Xarg"
 
-	_, err := Icinga2_Server.CreateCheckcommand(name, command, command_args)
-
+	_, err := Icinga2_Server.CreateCheckcommand(name, command, commandArgs)
 	if err != nil {
 		t.Error(err)
 	}
 
 	// Delete check command after creating it.
-	deleteErr := Icinga2_Server.DeleteCheckcommand(name)
-	if deleteErr != nil {
+	err = Icinga2_Server.DeleteCheckcommand(name)
+	if err != nil {
 		t.Error(err)
 	}
 

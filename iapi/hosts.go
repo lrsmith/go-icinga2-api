@@ -77,7 +77,6 @@ func (server *Server) CreateHost(hostname, address, address6 string, checkComman
 
 // DeleteHost ...
 func (server *Server) DeleteHost(hostname string) error {
-
 	results, err := server.NewAPIRequest("DELETE", "/objects/hosts/"+hostname+"?cascade=1", nil)
 	if err != nil {
 		return err
@@ -85,8 +84,7 @@ func (server *Server) DeleteHost(hostname string) error {
 
 	if results.Code == 200 {
 		return nil
-	} else {
-		return fmt.Errorf("%s", results.ErrorString)
 	}
 
+	return fmt.Errorf("%s", results.ErrorString)
 }
