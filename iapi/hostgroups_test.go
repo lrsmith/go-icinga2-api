@@ -35,6 +35,28 @@ func TestHostgroups(t *testing.T) {
 		})
 	})
 
+	t.Run("Update", func(t *testing.T) {
+		hostgroupName := "someHostgroupName"
+		firstDisplayName := "some Hostgroup Display Name"
+		_, err := icingaServer.CreateHostgroup(hostgroupName, firstDisplayName)
+		if err != nil {
+			t.Error(err)
+		}
+		defer icingaServer.DeleteHostgroup(hostgroupName)
+
+		secondDisplayName := "other hostgroup display name"
+		params := &HostgroupParams{
+			DisplayName: secondDisplayName,
+		}
+		updatedHostgroup, err := icingaServer.UpdateHostgroup(hostgroupName, params)
+		if err != nil {
+			t.Error(err)
+		}
+		if secondDisplayName != updatedHostgroup[0].Attrs.DisplayName {
+			t.Errorf("expected display_name fields to not be equal, got equal")
+		}
+	})
+
 	t.Run("Delete", func(t *testing.T) {
 		// Delete Hostgroup created via API. Should succeed
 		t.Run("Hostgroup", func(t *testing.T) {
