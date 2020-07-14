@@ -216,5 +216,4 @@ func TestNotifications(t *testing.T) {
 			}
 		})
 	})
->>>>>>> master
 }
