@@ -28,7 +28,21 @@ func TestCreateSimpleHost(t *testing.T) {
 	IPAddress := "127.0.0.2"
 	CheckCommand := "hostalive"
 
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, nil, nil, nil)
+	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, "", CheckCommand, nil, nil, nil)
+
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestCreateSimpleIPv6Host(t *testing.T) {
+
+	hostname := "go-icinga2-api-3"
+	IPAddress := "127.0.0.2"
+	IP6Address := "::1"
+	CheckCommand := "hostalive"
+
+	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, IP6Address, CheckCommand, nil, nil, nil)
 
 	if err != nil {
 		t.Error(err)
@@ -46,7 +60,7 @@ func TestCreateHostWithVariables(t *testing.T) {
 	variables["vars.os"] = "Linux"
 	variables["vars.creator"] = "Terraform"
 
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, variables, nil, nil)
+	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, "", CheckCommand, variables, nil, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -65,7 +79,7 @@ func TestCreateHostWithTemplates(t *testing.T) {
 
 	templates := []string{"template1", "template2"}
 
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, nil, templates, nil)
+	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, "", CheckCommand, nil, templates, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -83,7 +97,7 @@ func TestCreateHostWithGroup(t *testing.T) {
 	CheckCommand := "hostalive"
 	Group := []string{"linux-servers"}
 
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, CheckCommand, nil, nil, Group)
+	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, "", CheckCommand, nil, nil, Group)
 	if err != nil {
 		t.Error(err)
 	}
