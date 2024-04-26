@@ -112,6 +112,19 @@ func (server *Server) CreateConfigStage(packagename string, files map[string]str
 	return nil, fmt.Errorf("%s", results.ErrorString)
 }
 
+func (server *Server) DeleteConfigStage(packagename string, stage string) error {
+	results, err := server.NewAPIRequest("DELETE", "/config/stages/"+packagename+"/"+stage, nil)
+	if err != nil {
+		return err
+	}
+
+	if results.Code == 200 {
+		return nil
+	}
+
+	return fmt.Errorf("%s", results.ErrorString)
+}
+
 func (server *Server) DetermineLogStatus(log string) bool {
 	lines := strings.Split(log, "\n")
 	var lastLine string

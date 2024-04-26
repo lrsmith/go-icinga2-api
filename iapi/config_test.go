@@ -121,6 +121,39 @@ func TestConfigListStageFiles(t *testing.T) {
 	t.Error("Configuration file not found in active stage!")
 }
 
+func TestConfigCreateSecondStage(t *testing.T) {
+	var Icinga2_Server = Server{ICINGA2_API_USER_ROOT, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665/v1", true, nil}
+
+	var packagename = "test-package"
+
+	var files = make(map[string]string)
+	files["conf.d/test-host.conf"] = `object Host "test-host" {
+		display_name = "Test Host Updated"
+		address = "172.0.0.1"
+
+		check_command = "hostalive"
+	}`
+
+	stages, err := Icinga2_Server.CreateConfigStageRetriable(
+		packagename,
+		files,
+		true,
+		true,
+		5,
+		1000,
+	)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if !stages[0].Successful {
+		t.Error("Stage unsuccessful")
+		return
+	}
+}
+
 func TestConfigCreateBrokenStage(t *testing.T) {
 	var Icinga2_Server = Server{ICINGA2_API_USER_ROOT, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665/v1", true, nil}
 
@@ -150,6 +183,25 @@ func TestConfigCreateBrokenStage(t *testing.T) {
 
 	if stages[0].Successful {
 		t.Error("Broken Stage Error was not detected!")
+	}
+}
+
+func TestConfigDeleteStage(t *testing.T) {
+	var Icinga2_Server = Server{ICINGA2_API_USER_ROOT, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665/v1", true, nil}
+
+	var packagename = "test-package"
+
+	packages, err := Icinga2_Server.GetConfigPackage(packagename)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = Icinga2_Server.DeleteConfigStage(packagename, packages[0].Stages[0])
+
+	if err != nil {
+		t.Error(err)
 	}
 }
 
