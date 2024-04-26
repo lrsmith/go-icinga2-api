@@ -5,7 +5,7 @@ import (
 )
 
 func TestUser(t *testing.T) {
-	icingaServer := Server{"root", ICINGA2_API_PASSWORD, "https://127.0.0.1:5665/v1", true, nil}
+	icingaServer := Server{ICINGA2_API_USER_ROOT, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665/v1", true, nil}
 	t.Run("Create", func(t *testing.T) {
 		t.Run("SimpleUser", func(t *testing.T) {
 			username := "test-user"

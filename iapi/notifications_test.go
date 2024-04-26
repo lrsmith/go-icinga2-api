@@ -5,7 +5,7 @@ import (
 )
 
 func TestNotifications(t *testing.T) {
-	icingaServer := Server{"root", ICINGA2_API_PASSWORD, "https://127.0.0.1:5665/v1", true, nil}
+	icingaServer := Server{ICINGA2_API_USER_ROOT, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665/v1", true, nil}
 	// testHostName := "notification-test-host"
 	// _, err := icingaServer.CreateHost(testHostName, "127.0.0.1", "hostalive", nil, nil, nil)
 	// if err != nil {
