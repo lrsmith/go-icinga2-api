@@ -9,7 +9,7 @@ duplicate or near duplicate defintions of structs are being defined but can be r
 be in place to ensure everything still works.
 */
 
-//ServiceStruct stores service results
+// ServiceStruct stores service results
 type ServiceStruct struct {
 	Attrs ServiceAttrs `json:"attrs"`
 	Joins struct{}     `json:"joins"`
@@ -140,7 +140,7 @@ type UserAttrs struct {
 	Email string `json:"email"`
 }
 
-//NotificationStruct stores notification results
+// NotificationStruct stores notification results
 type NotificationStruct struct {
 	Attrs NotificationAttrs `json:"attrs"`
 	Joins struct{}          `json:"joins"`
@@ -155,4 +155,29 @@ type NotificationAttrs struct {
 	Interval    int         `json:"interval"`
 	Vars        interface{} `json:"vars"`
 	Templates   []string    `json:"templates"`
+}
+
+type ConfigPackageStruct struct {
+	Name        string   `json:"name"`
+	ActiveStage string   `json:"active-stage"`
+	Stages      []string `json:"stages"`
+}
+
+type ConfigStageAttrs struct {
+	Files    map[string]string `json:"files"`
+	Reload   bool              `json:"reload"`
+	Activate bool              `json:"Activate"`
+}
+
+type ConfigStageStruct struct {
+	Package    string `json:"package"`
+	Name       string `json:"stage"`
+	Status     string `json:"status"`
+	Log        string
+	Successful bool
+}
+
+type ConfigStageFileStruct struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
