@@ -172,7 +172,6 @@ type ConfigStageAttrs struct {
 type ConfigStageStruct struct {
 	Package    string `json:"package"`
 	Name       string `json:"stage"`
-	Status     string `json:"status"`
 	Log        string
 	Successful bool
 }
