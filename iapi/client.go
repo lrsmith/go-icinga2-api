@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"io"
 	"net/http"
 	"time"
 )
@@ -61,6 +62,43 @@ func (server *Server) Connect() error {
 	defer response.Body.Close()
 
 	return nil
+}
+
+func (server *Server) NewPlainTextRequest(method, APICall string, jsonString []byte) (string, error) {
+	fullURL := server.BaseURL + APICall
+
+	t := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: server.AllowUnverifiedSSL,
+		},
+	}
+
+	server.httpClient = &http.Client{
+		Transport: t,
+		Timeout:   time.Second * 60,
+	}
+
+	request, requestErr := http.NewRequest(method, fullURL, bytes.NewBuffer(jsonString))
+	if requestErr != nil {
+		return "", requestErr
+	}
+
+	request.SetBasicAuth(server.Username, server.Password)
+	request.Header.Set("Content-Type", "application/json")
+
+	response, doErr := server.httpClient.Do(request)
+	if doErr != nil {
+		return "", doErr
+	}
+	defer response.Body.Close()
+
+	bodyBytes, err := io.ReadAll(response.Body)
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(bodyBytes), nil
 }
 
 // NewAPIRequest ...

@@ -13,4 +13,4 @@ docker_clean:
 
 test:
 	$(eval password:=$(shell docker exec icinga2 bash -c 'grep password /etc/icinga2/conf.d/api-users.conf' | awk -F'"' '{ print $$2}' ))
-	( export ICINGA2_API_PASSWORD="$(password)" && go test ./... -v  )
+	( export ICINGA2_API_USER="icinga-test" ICINGA2_API_USER_ROOT="root" ICINGA2_API_PASSWORD="$(password)" && go test ./... -v  )
