@@ -54,10 +54,10 @@ func TestHostgroups(t *testing.T) {
 		defer icingaServer.DeleteHostgroup(hostgroupName)
 
 		secondDisplayName := "other hostgroup display name"
-		params := &HostgroupParams{
+		attrs := HostgroupAttrs{
 			DisplayName: secondDisplayName,
 		}
-		updatedHostgroup, err := icingaServer.UpdateHostgroup(hostgroupName, params)
+		updatedHostgroup, err := icingaServer.UpdateHostgroup(hostgroupName, attrs)
 		if err != nil {
 			t.Error(err)
 		}

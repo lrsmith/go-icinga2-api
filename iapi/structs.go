@@ -79,10 +79,10 @@ type HostAttrs struct {
 	Address6     string      `json:"address6"`
 	CheckCommand string      `json:"check_command"`
 	DisplayName  string      `json:"display_name"`
-	Groups       []string    `json:"groups"`
+	Groups       []string    `json:"groups,omitempty"`
 	Notes        string      `json:"notes"`
 	NotesURL     string      `json:"notes_url"`
-	Templates    []string    `json:"templates"`
+	Templates    []string    `json:"templates,omitempty"`
 	Vars         interface{} `json:"vars,omitempty"`
 	Zone         string      `json:"zone,omitempty"`
 }
@@ -95,6 +95,20 @@ type APIResult struct {
 	Code        int         `json:"Code"`
 	Results     interface{} `json:"results"`
 	Retries     int         `json:"Retries"`
+}
+
+// HostgroupUpdateResult stores the API response after updating a Hostgroup
+type HostgroupUpdateResult struct {
+	Code   float64 `json:"code"`
+	Name   string  `json:"name"`
+	Status string  `json:"status"`
+}
+
+// HostUpdateResult stores the API response after updating a Host
+type HostUpdateResult struct {
+	Code   float64 `json:"code"`
+	Name   string  `json:"name"`
+	Status string  `json:"status"`
 }
 
 // APIStatus stores the results of an Icinga2 API Status Call

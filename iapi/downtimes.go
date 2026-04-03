@@ -46,7 +46,7 @@ func (server *Server) ScheduleDowntime(t string, filter string, author string, c
 	var results []DowntimeScheduleResponse
 	err = json.Unmarshal(jsonResponse, &results)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshall the downtime response: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal the downtime response: %v", err)
 	}
 
 	var names []string
@@ -86,7 +86,7 @@ func (server *Server) RemoveDowntime(downtime string, author string) error {
 	var results []DowntimeRemoveResponse
 	err = json.Unmarshal(jsonResponse, &results)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshall the downtime response: %v", err)
+		return fmt.Errorf("failed to unmarshal the downtime response: %v", err)
 	}
 
 	for _, result := range results {
