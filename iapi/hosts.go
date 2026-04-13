@@ -3,6 +3,7 @@ package iapi
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 // GetHost ...
@@ -10,7 +11,7 @@ func (server *Server) GetHost(hostname string) ([]HostStruct, error) {
 
 	var hosts []HostStruct
 
-	results, err := server.NewAPIRequest("GET", "/objects/hosts/"+hostname, nil)
+	results, err := server.NewAPIRequest(http.MethodGet, "/objects/hosts/"+hostname, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func (server *Server) CreateHost(hostname, address, address6 string, checkComman
 	//fmt.Printf("<payload> %s\n", payloadJSON)
 
 	// Make the API request to create the hosts.
-	results, err := server.NewAPIRequest("PUT", "/objects/hosts/"+hostname, []byte(payloadJSON))
+	results, err := server.NewAPIRequest(http.MethodPut, "/objects/hosts/"+hostname, []byte(payloadJSON))
 	if err != nil {
 		return nil, err
 	}
@@ -76,9 +77,50 @@ func (server *Server) CreateHost(hostname, address, address6 string, checkComman
 
 }
 
+// UpdateHost updates a Host with its attrs
+func (server *Server) UpdateHost(name string, attrs HostAttrs) ([]HostStruct, error) {
+
+	host := HostStruct{
+		Attrs: attrs,
+	}
+
+	body, err := json.Marshal(host)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := server.NewAPIRequest(http.MethodPost, "/objects/hosts/"+name, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if r.Code != http.StatusOK {
+		return nil, fmt.Errorf("expected %d, got %d", http.StatusOK, r.Code)
+	}
+
+	jsonResponse, err := json.Marshal(r.Results)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal the host response: %v", err)
+	}
+
+	var results []HostUpdateResult
+	err = json.Unmarshal(jsonResponse, &results)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal the host response: %v", err)
+	}
+
+	for _, result := range results {
+		if result.Code != http.StatusOK {
+			return nil, fmt.Errorf("%s", result.Status)
+		}
+	}
+
+	return server.GetHost(name)
+}
+
 // DeleteHost ...
 func (server *Server) DeleteHost(hostname string) error {
-	results, err := server.NewAPIRequest("DELETE", "/objects/hosts/"+hostname+"?cascade=1", nil)
+	results, err := server.NewAPIRequest(http.MethodDelete, "/objects/hosts/"+hostname+"?cascade=1", nil)
 	if err != nil {
 		return err
 	}

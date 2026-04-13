@@ -9,11 +9,6 @@ import (
 
 const hostgroupEndpoint = "/objects/hostgroups"
 
-// HostgroupParams defines all available options related to updating a HostGroup.
-type HostgroupParams struct {
-	DisplayName string
-}
-
 // GetHostgroup fetches a HostGroup by its name.
 func (server *Server) GetHostgroup(name string) ([]HostgroupStruct, error) {
 	endpoint := fmt.Sprintf("%v/%v", hostgroupEndpoint, name)
@@ -76,34 +71,44 @@ func (server *Server) CreateHostgroup(name, displayName, zone string) ([]Hostgro
 	return nil, fmt.Errorf("%s", results.ErrorString)
 }
 
-// UpdateHostgroup updates a HostGroup with its params.
-func (server *Server) UpdateHostgroup(name string, params *HostgroupParams) ([]HostgroupStruct, error) {
-	attrs := make(map[string]interface{})
-	if params.DisplayName != "" {
-		attrs["display_name"] = params.DisplayName
-	}
+// UpdateHostgroup updates a HostGroup with its attrs.
+func (server *Server) UpdateHostgroup(name string, attrs HostgroupAttrs) ([]HostgroupStruct, error) {
+	var hostgroup HostgroupStruct
+	hostgroup.Attrs = attrs
 
-	attrsMap := map[string]interface{}{
-		"attrs": attrs,
-	}
-
-	attrsBody, err := json.Marshal(attrsMap)
+	body, err := json.Marshal(hostgroup)
 	if err != nil {
 		return nil, err
 	}
 
 	endpoint := fmt.Sprintf("%v/%v", hostgroupEndpoint, name)
-	results, err := server.NewAPIRequest(http.MethodPost, endpoint, attrsBody)
+	r, err := server.NewAPIRequest(http.MethodPost, endpoint, body)
 	if err != nil {
 		return nil, err
 	}
 
-	if results.Code == http.StatusOK {
-		hostgroups, err := server.GetHostgroup(name)
-		return hostgroups, err
+	if r.Code != http.StatusOK {
+		return nil, fmt.Errorf("expected %d, got %d", http.StatusOK, r.Code)
 	}
 
-	return nil, fmt.Errorf("%s", results.ErrorString)
+	jsonResponse, err := json.Marshal(r.Results)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal the host group response: %v", err)
+	}
+
+	var results []HostgroupUpdateResult
+	err = json.Unmarshal(jsonResponse, &results)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal the host group response: %v", err)
+	}
+
+	for _, result := range results {
+		if result.Code != http.StatusOK {
+			return nil, fmt.Errorf("%s", result.Status)
+		}
+	}
+
+	return server.GetHostgroup(name)
 }
 
 // DeleteHostgroup deletes a HostGroup by its name.
