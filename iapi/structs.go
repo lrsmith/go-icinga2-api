@@ -91,10 +91,9 @@ type HostAttrs struct {
 type APIResult struct {
 	Error       float64 `json:"error"`
 	ErrorString string
-	Status      string      `json:"Status"`
-	Code        int         `json:"Code"`
+	Status      string      `json:"status"`
+	Code        int         `json:"code"`
 	Results     interface{} `json:"results"`
-	Retries     int         `json:"Retries"`
 }
 
 // HostgroupUpdateResult stores the API response after updating a Hostgroup

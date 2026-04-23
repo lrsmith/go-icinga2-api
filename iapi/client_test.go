@@ -1,9 +1,12 @@
 package iapi
 
 import (
+	"net/http"
 	"os"
 	"strconv"
 	"testing"
+
+	"github.com/jarcoal/httpmock"
 )
 
 var ICINGA2_API_USER = os.Getenv("ICINGA2_API_USER")
@@ -38,25 +41,22 @@ func TestConnect(t *testing.T) {
 	}
 }
 
-func TestConnectServerUnavailable(t *testing.T) {
-
-	var Icinga2_Server = Server{"icinga-test", "icinga", "https://127.0.0.1:4665/v1", ICINGA2_INSECURE_SKIP_TLS_VERIFY, 5, 0, nil}
-	retries, err := Icinga2_Server.Connect()
-
-	if err == nil {
-		t.Errorf("Error : Did not get error connecting to unavailable server.")
-	}
-	if retries != 5 {
-		t.Errorf("Error : Did not get error connecting to unavailable server before 5 retries.")
-	}
-}
-
 func TestConnectWithBadCredential(t *testing.T) {
 
 	var Icinga2_Server = Server{"unknownUser", "unknownPW", ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, 0, 0, nil}
-	_, err := Icinga2_Server.Connect()
+	err := Icinga2_Server.Connect()
 	if err != nil {
 		t.Errorf("Did not fail with bad credentials : %s", err)
+	}
+}
+
+func TestConnectServerBadURINoVersion(t *testing.T) {
+
+	var Icinga2_Server = Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, 0, 0, nil}
+	result, _ := Icinga2_Server.NewAPIRequest("GET", "/status", nil)
+
+	if result.Code != 404 {
+		t.Errorf("Error : Did not get expected 404 error connection to bad URI, with no version.")
 	}
 }
 
@@ -69,25 +69,86 @@ func TestNewAPIRequest(t *testing.T) {
 	}
 }
 
-func TestNewAPIRequestServerUnavailable(t *testing.T) {
+func TestNewAPIRequestWhileReloading(t *testing.T) {
+	mockTransport := httpmock.NewMockTransport()
+	mockTransport.RegisterResponder("GET", "https://127.0.0.1:5665/status",
+		httpmock.ResponderFromMultipleResponses(
+			[]*http.Response{
+				httpmock.NewStringResponse(http.StatusServiceUnavailable, `{"status":"Icinga is reloading"}`),
+				httpmock.NewStringResponse(http.StatusOK, `{}`),
+			},
+			t.Log),
+	)
 
-	var Icinga2_Server = Server{"icinga-test", "icinga", "https://127.0.0.1:4665/v1", ICINGA2_INSECURE_SKIP_TLS_VERIFY, 5, 0, nil}
-	result, err := Icinga2_Server.NewAPIRequest("GET", "/status", nil)
+	tries := 0
+	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, tries, 0, nil}
+	server.createHttpClient()
+	server.httpClient.Transport = mockTransport
+
+	results, err := server.NewAPIRequest("GET", "/status", nil)
 
 	if err == nil {
-		t.Errorf("Error : Did not get error connecting to unavailable server.")
+		t.Errorf("expected error 'icinga is reloading', got nil")
+		return
 	}
-	if result.Retries != 5 {
-		t.Errorf("Error : Did not get error connecting to unavailable server before 5 retries.")
+
+	if results.Code != http.StatusServiceUnavailable {
+		t.Errorf("expected code %d, got %d", http.StatusServiceUnavailable, results.Code)
+	}
+
+	if err.Error() != "icinga is reloading" {
+		t.Errorf("expected error 'icinga is reloading', got '%v'", err)
+	}
+
+	info := mockTransport.GetCallCountInfo()
+	calls, ok := info["GET https://127.0.0.1:5665/status"]
+
+	if !ok {
+		t.Errorf("cannot find mock stats in %v", info)
+		return
+	}
+
+	if calls != 1 {
+		t.Errorf("expected 1 call, got %d", calls)
 	}
 }
 
-func TestConnectServerBadURINoVersion(t *testing.T) {
+func TestNewAPIRequestWhileReloadingWithRetries(t *testing.T) {
+	mockTransport := httpmock.NewMockTransport()
+	mockTransport.RegisterResponder("GET", "https://127.0.0.1:5665/status",
+		httpmock.ResponderFromMultipleResponses(
+			[]*http.Response{
+				httpmock.NewStringResponse(http.StatusServiceUnavailable, `{"status":"Icinga is reloading"}`),
+				httpmock.NewStringResponse(http.StatusOK, `{}`),
+			},
+			t.Log),
+	)
 
-	var Icinga2_Server = Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, 0, 0, nil}
-	result, _ := Icinga2_Server.NewAPIRequest("GET", "/status", nil)
+	tries := 2
+	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, tries, 0, nil}
+	server.createHttpClient()
+	server.httpClient.Transport = mockTransport
 
-	if result.Code != 404 {
-		t.Errorf("Error : Did not get expected 404 error connection to bad URI, with no version.")
+	results, err := server.NewAPIRequest("GET", "/status", nil)
+
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+
+	if results.Code != http.StatusOK {
+		t.Errorf("expected code %d, got %d", http.StatusOK, results.Code)
+	}
+
+	info := mockTransport.GetCallCountInfo()
+	calls, ok := info["GET https://127.0.0.1:5665/status"]
+
+	if !ok {
+		t.Errorf("cannot find mock stats in %v", info)
+		return
+	}
+
+	if calls != tries {
+		t.Errorf("expected %d calls, got %d", tries, calls)
 	}
 }
