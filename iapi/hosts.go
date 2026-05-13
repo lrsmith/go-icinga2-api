@@ -1,9 +1,15 @@
 package iapi
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math"
 	"net/http"
+	"net/url"
+
+	"github.com/cenkalti/backoff/v5"
 )
 
 // GetHost ...
@@ -33,8 +39,9 @@ func (server *Server) GetHost(hostname string) ([]HostStruct, error) {
 
 }
 
-// CreateHost ...
-func (server *Server) CreateHost(hostname, address, address6 string, checkCommand string, variables map[string]interface{}, templates []string, groups []string, zone string) ([]HostStruct, error) {
+// CreateHost creates a host.
+// When a context deadline is exceeded, wait for the host to be created if a number of tries is defined.
+func (server *Server) CreateHost(hostname, address, address6 string, checkCommand string, variables map[string]interface{}, templates []string, groups []string, zone string) (hosts []HostStruct, err error) {
 
 	var newAttrs HostAttrs
 	newAttrs.Address = address
@@ -60,21 +67,46 @@ func (server *Server) CreateHost(hostname, address, address6 string, checkComman
 		return nil, marshalErr
 	}
 
-	//fmt.Printf("<payload> %s\n", payloadJSON)
+	// Create the host
+	results, err := server.NewAPIRequest(
+		http.MethodPut,
+		fmt.Sprintf("/objects/hosts/%s", url.PathEscape(hostname)),
+		[]byte(payloadJSON),
+	)
 
-	// Make the API request to create the hosts.
-	results, err := server.NewAPIRequest(http.MethodPut, "/objects/hosts/"+hostname, []byte(payloadJSON))
-	if err != nil {
+	// Ignore context deadline exceeded
+	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		return nil, err
 	}
 
-	if results.Code == 200 {
-		hosts, err := server.GetHost(hostname)
-		return hosts, err
+	// Detect real errors
+	if err == nil && results.Code != 200 {
+		return nil, fmt.Errorf("%s", results.ErrorString)
 	}
 
-	return nil, fmt.Errorf("%s", results.ErrorString)
+	// Wait for the host to be created
+	operation := func() ([]HostStruct, error) {
+		hosts, err := server.GetHost(hostname)
+		if err != nil {
+			return nil, backoff.Permanent(err)
+		}
+		for _, host := range hosts {
+			if host.Name == hostname {
+				return hosts, nil
+			}
+		}
+		return nil, fmt.Errorf("host '%s' not found after creation", hostname)
+	}
 
+	// Number of tries must be at least 1 to avoid infinite loop
+	tries := uint(math.Max(float64(server.Tries), 1.0))
+
+	return backoff.Retry(
+		context.Background(),
+		operation,
+		backoff.WithBackOff(backoff.NewConstantBackOff(server.RetryDelay)),
+		backoff.WithMaxTries(tries),
+	)
 }
 
 // UpdateHost updates a Host with its attrs
@@ -118,18 +150,47 @@ func (server *Server) UpdateHost(name string, attrs HostAttrs) ([]HostStruct, er
 	return server.GetHost(name)
 }
 
-// DeleteHost ...
+// DeleteHost deletes a host.
+// When a context deadline is exceeded, wait for the host to be deleted if a number of tries is defined.
 func (server *Server) DeleteHost(hostname string) error {
-	results, err := server.NewAPIRequest(http.MethodDelete, "/objects/hosts/"+hostname+"?cascade=1", nil)
-	if err != nil {
+	results, err := server.NewAPIRequest(
+		http.MethodDelete,
+		fmt.Sprintf("/objects/hosts/%s?cascade=1", url.PathEscape(hostname)),
+		nil,
+	)
+
+	// Ignore context deadline exceeded
+	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		return err
 	}
 
-	if results.Code == 200 {
-		return nil
+	// Detect real errors
+	if err == nil && results.Code != 200 {
+		return fmt.Errorf("%s", results.ErrorString)
 	}
 
-	return fmt.Errorf("%s", results.ErrorString)
+	// Wait for the host to be deleted
+	operation := func() (string, error) {
+		exists, err := server.HostExists(hostname)
+		if err != nil {
+			return "", backoff.Permanent(err)
+		}
+		if exists {
+			return "", fmt.Errorf("host '%s' still exists after deletion", hostname)
+		}
+		return "", nil
+	}
+
+	// Number of tries must be at least 1 to avoid infinite loop
+	tries := uint(math.Max(float64(server.Tries), 1.0))
+
+	_, err = backoff.Retry(
+		context.Background(),
+		operation,
+		backoff.WithBackOff(backoff.NewConstantBackOff(server.RetryDelay)),
+		backoff.WithMaxTries(tries),
+	)
+	return err
 }
 
 // HostExists returns true if a Host exists
