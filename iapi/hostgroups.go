@@ -9,11 +9,6 @@ import (
 
 const hostgroupEndpoint = "/objects/hostgroups"
 
-// HostgroupParams defines all available options related to updating a HostGroup.
-type HostgroupParams struct {
-	DisplayName string
-}
-
 // GetHostgroup fetches a HostGroup by its name.
 func (server *Server) GetHostgroup(name string) ([]HostgroupStruct, error) {
 	endpoint := fmt.Sprintf("%v/%v", hostgroupEndpoint, name)

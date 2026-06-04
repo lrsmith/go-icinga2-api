@@ -188,3 +188,22 @@ type DowntimeRemoveResponse struct {
 	Code   float64 `json:"code"`
 	Status string  `json:"status"`
 }
+
+// ApiUserStruct is a struct used to store results from an Icinga2 ApiUser API Call. The content are also used to generate the JSON for the CreateApiUser call
+type ApiUserStruct struct {
+	Name  string       `json:"name"`
+	Type  string       `json:"type"`
+	Attrs ApiUserAttrs `json:"attrs"`
+}
+
+// ApiUserAttrs ...
+type ApiUserAttrs struct {
+	Password    string   `json:"password,omitempty"`
+	ClientCN    string   `json:"client_cn,omitempty"`
+	Permissions []string `json:"permissions,omitempty"`
+}
+
+// HostgroupParams defines all available options related to updating a HostGroup.
+type HostgroupParams struct {
+	DisplayName string
+}

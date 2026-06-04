@@ -14,7 +14,7 @@ func TestDowntimes(t *testing.T) {
 			hostname := "go-icinga2-api-dt-create"
 			IPAddress := "127.0.0.2"
 			CheckCommand := "hostalive"
-			_, err := icingaServer.CreateHost(hostname, IPAddress, "", CheckCommand, nil, nil, nil,"")
+			_, err := icingaServer.CreateHost(hostname, IPAddress, "", CheckCommand, nil, nil, nil, "")
 			if err != nil {
 				t.Error(err)
 			}
