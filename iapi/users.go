@@ -31,10 +31,11 @@ func (server *Server) GetUser(name string) ([]UserStruct, error) {
 }
 
 // CreateUser ...
-func (server *Server) CreateUser(name, email string) ([]UserStruct, error) {
+func (server *Server) CreateUser(name, email string, variables map[string]string) ([]UserStruct, error) {
 
 	var newAttrs UserAttrs
 	newAttrs.Email = email
+	newAttrs.Vars = variables
 
 	var newUser UserStruct
 	newUser.Name = name
