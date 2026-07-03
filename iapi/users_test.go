@@ -9,7 +9,7 @@ func TestUser(t *testing.T) {
 	t.Run("Create", func(t *testing.T) {
 		t.Run("SimpleUser", func(t *testing.T) {
 			username := "test-user"
-			_, err := icingaServer.CreateUser(username, "")
+			_, err := icingaServer.CreateUser(username, "", nil)
 			if err != nil {
 				t.Error(err)
 			}
@@ -17,7 +17,7 @@ func TestUser(t *testing.T) {
 
 		t.Run("UserAlreadyExists", func(t *testing.T) {
 			username := "test-user"
-			_, err := icingaServer.CreateUser(username, "")
+			_, err := icingaServer.CreateUser(username, "", nil)
 			if err == nil {
 				t.Error(err)
 			}
@@ -26,7 +26,27 @@ func TestUser(t *testing.T) {
 		t.Run("UserWithEmail", func(t *testing.T) {
 			username := "test-user-with-email"
 			email := "email@example.com"
-			_, err := icingaServer.CreateUser(username, email)
+			_, err := icingaServer.CreateUser(username, email, nil)
+			if err != nil {
+				t.Error(err)
+			}
+
+			// Delete user after creating it.
+			err = icingaServer.DeleteUser(username)
+			if err != nil {
+				t.Error(err)
+			}
+		})
+
+		t.Run("UserWithVars", func(t *testing.T) {
+			username := "test-user-with-vars"
+
+			variables := make(map[string]string)
+
+			variables["vars.login"] = "test_user"
+			variables["vars.ou"] = "custom support"
+
+			_, err := icingaServer.CreateUser(username, "", variables)
 			if err != nil {
 				t.Error(err)
 			}

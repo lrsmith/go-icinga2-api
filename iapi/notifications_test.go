@@ -97,7 +97,7 @@ func TestNotifications(t *testing.T) {
 			username := "user"
 
 			_, _ = icingaServer.CreateHost(hostname, "127.0.0.1", "", "hostalive", nil, nil, groups, "")
-			_, _ = icingaServer.CreateUser(username, "user@example.com")
+			_, _ = icingaServer.CreateUser(username, "user@example.com", nil)
 			_, err := icingaServer.CreateNotification(notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
 			if err != nil {
 				t.Error(err)
@@ -128,7 +128,7 @@ func TestNotifications(t *testing.T) {
 			interval := 1800
 			username := "user"
 
-			_, _ = icingaServer.CreateUser(username, "user@example.com")
+			_, _ = icingaServer.CreateUser(username, "user@example.com", nil)
 			_, _ = icingaServer.CreateService(servicename, hostname, checkCommand, nil, nil)
 			_, err := icingaServer.CreateNotification(notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
 
@@ -147,7 +147,7 @@ func TestNotifications(t *testing.T) {
 			interval := 1800
 			username := "user"
 
-			_, _ = icingaServer.CreateUser(username, "user@example.com")
+			_, _ = icingaServer.CreateUser(username, "user@example.com", nil)
 			_, _ = icingaServer.CreateService(servicename, hostname, checkCommand, nil, nil)
 			_, err := icingaServer.CreateNotification(notificationName, hostname, command, servicename, interval, []string{username}, nil, nil)
 			if err == nil {

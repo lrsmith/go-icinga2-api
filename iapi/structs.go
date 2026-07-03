@@ -147,7 +147,8 @@ type UserStruct struct {
 
 // UserAttrs This is struct lists the attributes that can be set during a CreateUser call. The contents of the struct is converted into JSON
 type UserAttrs struct {
-	Email string `json:"email"`
+	Email string      `json:"email"`
+	Vars  interface{} `json:"vars"`
 }
 
 // NotificationStruct stores notification results
