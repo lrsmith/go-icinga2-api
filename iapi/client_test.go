@@ -14,7 +14,7 @@ var ICINGA2_API_PASSWORD = os.Getenv("ICINGA2_API_PASSWORD")
 var ICINGA2_API_URL = os.Getenv("ICINGA2_API_URL")
 var ICINGA2_INSECURE_SKIP_TLS_VERIFY, _ = strconv.ParseBool(os.Getenv("ICINGA2_INSECURE_SKIP_TLS_VERIFY"))
 
-var Icinga2_Server = Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, 0, 0, nil}
+var Icinga2_Server = Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
 
 func TestConnect(t *testing.T) {
 
@@ -33,7 +33,7 @@ func TestConnect(t *testing.T) {
 		t.Fatal("ICINGA2_API_PASSWORD must be set for acceptance tests")
 	}
 
-	var Icinga2_Server = Server{"icinga-test", "icinga", ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, 0, 0, nil}
+	var Icinga2_Server = Server{"icinga-test", "icinga", ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
 	Icinga2_Server.Connect()
 
 	if Icinga2_Server.httpClient == nil {
@@ -43,7 +43,7 @@ func TestConnect(t *testing.T) {
 
 func TestConnectWithBadCredential(t *testing.T) {
 
-	var Icinga2_Server = Server{"unknownUser", "unknownPW", ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, 0, 0, nil}
+	var Icinga2_Server = Server{"unknownUser", "unknownPW", ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
 	err := Icinga2_Server.Connect()
 	if err != nil {
 		t.Errorf("Did not fail with bad credentials : %s", err)
@@ -52,7 +52,7 @@ func TestConnectWithBadCredential(t *testing.T) {
 
 func TestConnectServerBadURINoVersion(t *testing.T) {
 
-	var Icinga2_Server = Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, 0, 0, nil}
+	var Icinga2_Server = Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
 	result, _ := Icinga2_Server.NewAPIRequest("GET", "/status", nil)
 
 	if result.Code != 404 {
@@ -81,7 +81,7 @@ func TestNewAPIRequestWhileReloading(t *testing.T) {
 	)
 
 	tries := 0
-	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, tries, 0, nil}
+	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0, nil}
 	server.createHttpClient()
 	server.httpClient.Transport = mockTransport
 
@@ -125,7 +125,7 @@ func TestNewAPIRequestWhileReloadingWithRetries(t *testing.T) {
 	)
 
 	tries := 2
-	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, tries, 0, nil}
+	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0, nil}
 	server.createHttpClient()
 	server.httpClient.Transport = mockTransport
 

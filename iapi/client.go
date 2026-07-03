@@ -5,11 +5,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -22,28 +24,40 @@ type Server struct {
 	Password           string
 	BaseURL            string
 	AllowUnverifiedSSL bool
+	CACertFile         string
 	Tries              int
 	RetryDelay         time.Duration
 	httpClient         *http.Client
 }
 
-func New(username, password, url string, allowUnverifiedSSL bool, tries int, retryDelay time.Duration) (*Server, error) {
-	return &Server{username, password, url, allowUnverifiedSSL, tries, retryDelay, nil}, nil
+func New(username, password, url string, allowUnverifiedSSL bool, caCertFile string, tries int, retryDelay time.Duration) (*Server, error) {
+	return &Server{username, password, url, allowUnverifiedSSL, caCertFile, tries, retryDelay, nil}, nil
 }
 
-func (server *Server) Config(username, password, url string, allowUnverifiedSSL bool, tries int, retryDelay time.Duration) (*Server, error) {
+func (server *Server) Config(username, password, url string, allowUnverifiedSSL bool, caCertFile string, tries int, retryDelay time.Duration) (*Server, error) {
 	// TODO : Add code to verify parameters
-	return &Server{username, password, url, allowUnverifiedSSL, tries, retryDelay, nil}, nil
+	return &Server{username, password, url, allowUnverifiedSSL, caCertFile, tries, retryDelay, nil}, nil
 }
 
 // createHttpClient defensively creates the HTTP client once
 // and allow httpmock to mock the Transport attribute of the HTTP client
 func (server *Server) createHttpClient() {
 	if server.httpClient == nil {
+		var caCertPool *x509.CertPool
+		if server.CACertFile != "" {
+			caCert, err := os.ReadFile(server.CACertFile)
+			if err != nil {
+				return
+			}
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(caCert)
+		}
+
 		server.httpClient = &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: server.AllowUnverifiedSSL,
+					RootCAs:            caCertPool,
 				},
 			},
 			Timeout: time.Second * 60,
