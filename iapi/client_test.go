@@ -13,6 +13,7 @@ var ICINGA2_API_USER = os.Getenv("ICINGA2_API_USER")
 var ICINGA2_API_PASSWORD = os.Getenv("ICINGA2_API_PASSWORD")
 var ICINGA2_API_URL = os.Getenv("ICINGA2_API_URL")
 var ICINGA2_INSECURE_SKIP_TLS_VERIFY, _ = strconv.ParseBool(os.Getenv("ICINGA2_INSECURE_SKIP_TLS_VERIFY"))
+var ICINGA2_API_CA_CERT_FILE = os.Getenv("ICINGA2_API_CA_CERT_FILE")
 
 var Icinga2_Server = Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
 
@@ -35,6 +36,19 @@ func TestConnect(t *testing.T) {
 
 	var Icinga2_Server = Server{"icinga-test", "icinga", ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
 	Icinga2_Server.Connect()
+
+	if Icinga2_Server.httpClient == nil {
+		t.Errorf("Failed to succesfully connect to Icinga Server")
+	}
+}
+
+func TestConnectCA(t *testing.T) {
+
+	var Icinga2_Server = Server{"icinga-test", "icinga", ICINGA2_API_URL, false, ICINGA2_API_CA_CERT_FILE, 0, 0, nil}
+	err := Icinga2_Server.Connect()
+	if err != nil {
+		t.Errorf("Failed to succesfully connect to Icinga Server: %s", err)
+	}
 
 	if Icinga2_Server.httpClient == nil {
 		t.Errorf("Failed to succesfully connect to Icinga Server")

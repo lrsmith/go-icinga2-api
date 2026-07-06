@@ -105,7 +105,7 @@ services:
       - ./init-icinga2.sh:/config/init-icinga2.sh
 
   icinga2:
-    command: [ "sh", "-c", "sleep 5 ; icinga2 daemon" ]
+    command: [ "sh", "-c", "sleep 5 ; /config/post-init-icinga2.sh ; icinga2 daemon" ]
     depends_on:
       - icingadb-redis
       - init-icinga2
@@ -117,6 +117,7 @@ services:
     volumes:
       - icinga2:/data
       - ./icinga2.conf.d:/custom_data/custom.conf.d
+      - ./post-init-icinga2.sh:/config/post-init-icinga2.sh
 
   icingadb:
     environment:

@@ -41,15 +41,15 @@ func (server *Server) Config(username, password, url string, allowUnverifiedSSL 
 
 // createHttpClient defensively creates the HTTP client once
 // and allow httpmock to mock the Transport attribute of the HTTP client
-func (server *Server) createHttpClient() {
+func (server *Server) createHttpClient() error {
 	if server.httpClient == nil {
 		var caCertPool *x509.CertPool
 		if server.CACertFile != "" {
 			caCert, err := os.ReadFile(server.CACertFile)
 			if err != nil {
-				return
+				return err
 			}
-			caCertPool := x509.NewCertPool()
+			caCertPool = x509.NewCertPool()
 			caCertPool.AppendCertsFromPEM(caCert)
 		}
 
@@ -63,10 +63,14 @@ func (server *Server) createHttpClient() {
 			Timeout: time.Second * 60,
 		}
 	}
+	return nil
 }
 
 func (server *Server) doRequest(method, fullURL string, body io.Reader) (*http.Response, error) {
-	server.createHttpClient()
+	err := server.createHttpClient()
+	if err != nil {
+		return nil, err
+	}
 
 	var bodyBytes []byte
 	if body != nil {
