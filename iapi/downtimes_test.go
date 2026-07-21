@@ -7,7 +7,7 @@ import (
 )
 
 func TestDowntimes(t *testing.T) {
-	icingaServer := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, 0, 0, nil}
+	icingaServer := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
 
 	t.Run("Create", func(t *testing.T) {
 		t.Run("Downtime", func(t *testing.T) {

@@ -3,3 +3,6 @@
 
 # Except those related to Git (and GitHub)
 !.git*
+
+# Exclude CA file
+ca.crt

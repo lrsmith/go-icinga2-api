@@ -156,7 +156,7 @@ func TestCreateHostWithDeadlineExceeded(t *testing.T) {
 		httpmock.NewErrorResponder(context.DeadlineExceeded),
 	)
 
-	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, 0, 0, nil}
+	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
 	server.createHttpClient()
 	server.httpClient.Transport = mockTransport
 
@@ -195,7 +195,7 @@ func TestCreateHostWithDeadlineExceededAndRetries(t *testing.T) {
 	)
 
 	tries := 2
-	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, tries, 0, nil}
+	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0, nil}
 	server.createHttpClient()
 	server.httpClient.Transport = mockTransport
 
@@ -261,7 +261,7 @@ func TestDeleteHostWithDeadlineExceeded(t *testing.T) {
 		httpmock.NewErrorResponder(context.DeadlineExceeded),
 	)
 
-	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, 0, 0, nil}
+	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
 	server.createHttpClient()
 	server.httpClient.Transport = mockTransport
 
@@ -299,7 +299,7 @@ func TestDeleteHostWithDeadlineExceededAndRetries(t *testing.T) {
 	)
 
 	tries := 2
-	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, tries, 0, nil}
+	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0, nil}
 	server.createHttpClient()
 	server.httpClient.Transport = mockTransport
 
