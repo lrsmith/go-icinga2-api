@@ -186,3 +186,42 @@ func TestNewAPIRequestWhileReloadingWithRetries(t *testing.T) {
 		t.Errorf("expected %d calls, got %d", tries, calls)
 	}
 }
+
+func TestGetStatusWithReloadAndExceededRetries(t *testing.T) {
+	mockTransport := httpmock.NewMockTransport()
+	mockTransport.RegisterResponder("GET", "https://127.0.0.1:5665/status",
+		httpmock.ResponderFromMultipleResponses(
+			[]*http.Response{
+				httpmock.NewStringResponse(http.StatusServiceUnavailable, `{"status":"Icinga is reloading"}`),
+				httpmock.NewStringResponse(http.StatusServiceUnavailable, `{"status":"Icinga is reloading"}`),
+				httpmock.NewStringResponse(http.StatusServiceUnavailable, `{"status":"Icinga is reloading"}`),
+			},
+			t.Log),
+	)
+
+	tries := 2
+	server, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	server.httpClient.Transport = mockTransport
+
+	_, err = server.NewAPIRequest(context.Background(), "GET", "/status", nil, nil)
+
+	if err == nil {
+		t.Errorf("expected error, got nil")
+	}
+
+	info := mockTransport.GetCallCountInfo()
+	calls, ok := info["GET https://127.0.0.1:5665/status"]
+
+	if !ok {
+		t.Errorf("cannot find mock stats in %v", info)
+		return
+	}
+
+	if calls != tries {
+		t.Errorf("expected %d calls, got %d", tries, calls)
+	}
+}
+
