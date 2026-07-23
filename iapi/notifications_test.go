@@ -1,20 +1,25 @@
 package iapi
 
 import (
+	"context"
 	"testing"
 )
 
 func TestNotifications(t *testing.T) {
-	icingaServer := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
-	// testHostName := "notification-test-host"
-	// _, err := icingaServer.CreateHost(testHostName, "127.0.0.1", "hostalive", nil, nil, nil)
-	// if err != nil {
-	// 	t.Error(err)
-	// }
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+	icingaServer, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	ctx := context.Background()
+
 	t.Run("Read", func(t *testing.T) {
 		t.Run("TestGetValidNotification", func(t *testing.T) {
 			name := "valid-notification"
-			_, err := icingaServer.GetNotification(name)
+			_, err := icingaServer.GetNotification(ctx, name)
 			if err != nil {
 				t.Error(err)
 			}
@@ -22,7 +27,7 @@ func TestNotifications(t *testing.T) {
 
 		t.Run("TestGetInvalidNotification", func(t *testing.T) {
 			name := "invalid-notification"
-			_, err := icingaServer.GetNotification(name)
+			_, err := icingaServer.GetNotification(ctx, name)
 			if err != nil {
 				t.Error(err)
 			}
@@ -31,16 +36,15 @@ func TestNotifications(t *testing.T) {
 
 	t.Run("Create", func(t *testing.T) {
 		t.Run("NotificationCommandDoNotExist", func(t *testing.T) {
-
 			hostname := "host"
 			notificationname := hostname + "!" + hostname
 			command := "invalid-command"
 			servicename := ""
 			interval := 1800
 
-			_, err := icingaServer.CreateNotification(notificationname, hostname, command, servicename, interval, nil, nil, nil)
+			_, err := icingaServer.CreateNotification(ctx, notificationname, hostname, command, servicename, interval, nil, nil, nil)
 			if err == nil {
-				t.Error(err)
+				t.Error("expected error, got nil")
 			}
 		})
 
@@ -51,9 +55,9 @@ func TestNotifications(t *testing.T) {
 			servicename := ""
 			interval := 1800
 
-			_, err := icingaServer.CreateNotification(notificationname, hostname, command, servicename, interval, nil, nil, nil)
+			_, err := icingaServer.CreateNotification(ctx, notificationname, hostname, command, servicename, interval, nil, nil, nil)
 			if err == nil {
-				t.Error(err)
+				t.Error("expected error, got nil")
 			}
 		})
 
@@ -64,9 +68,9 @@ func TestNotifications(t *testing.T) {
 			servicename := ""
 			interval := 1800
 
-			_, err := icingaServer.CreateNotification(notificationname, hostname, command, servicename, interval, nil, nil, nil)
+			_, err := icingaServer.CreateNotification(ctx, notificationname, hostname, command, servicename, interval, nil, nil, nil)
 			if err == nil {
-				t.Error(err)
+				t.Error("expected error, got nil")
 			}
 		})
 
@@ -79,11 +83,11 @@ func TestNotifications(t *testing.T) {
 			interval := 1800
 			users := []string{"user-dne"}
 
-			_, _ = icingaServer.CreateHost(hostname, "127.0.0.1", "", "hostalive", nil, nil, group, "")
-			_, err := icingaServer.CreateNotification(notificationname, hostname, command, servicename, interval, users, nil, nil)
+			_, _ = icingaServer.CreateHost(ctx, hostname, "127.0.0.1", "", "hostalive", nil, nil, group, "")
+			_, err := icingaServer.CreateNotification(ctx, notificationname, hostname, command, servicename, interval, users, nil, nil)
 
 			if err == nil {
-				t.Error(err)
+				t.Error("expected error, got nil")
 			}
 		})
 
@@ -96,9 +100,9 @@ func TestNotifications(t *testing.T) {
 			interval := 1800
 			username := "user"
 
-			_, _ = icingaServer.CreateHost(hostname, "127.0.0.1", "", "hostalive", nil, nil, groups, "")
-			_, _ = icingaServer.CreateUser(username, "user@example.com", nil)
-			_, err := icingaServer.CreateNotification(notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
+			_, _ = icingaServer.CreateHost(ctx, hostname, "127.0.0.1", "", "hostalive", nil, nil, groups, "")
+			_, _ = icingaServer.CreateUser(ctx, username, "user@example.com", nil)
+			_, err := icingaServer.CreateNotification(ctx, notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
 			if err != nil {
 				t.Error(err)
 			}
@@ -112,14 +116,13 @@ func TestNotifications(t *testing.T) {
 			interval := 1800
 			username := "user"
 
-			_, err := icingaServer.CreateNotification(notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
+			_, err := icingaServer.CreateNotification(ctx, notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
 			if err == nil {
-				t.Error(err)
+				t.Error("expected error, got nil")
 			}
 		})
 
 		t.Run("ServiceNotification", func(t *testing.T) {
-
 			hostname := "host"
 			servicename := "test"
 			checkCommand := "random"
@@ -128,9 +131,9 @@ func TestNotifications(t *testing.T) {
 			interval := 1800
 			username := "user"
 
-			_, _ = icingaServer.CreateUser(username, "user@example.com", nil)
-			_, _ = icingaServer.CreateService(servicename, hostname, checkCommand, nil, nil)
-			_, err := icingaServer.CreateNotification(notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
+			_, _ = icingaServer.CreateUser(ctx, username, "user@example.com", nil)
+			_, _ = icingaServer.CreateService(ctx, servicename, hostname, checkCommand, nil, nil)
+			_, err := icingaServer.CreateNotification(ctx, notificationname, hostname, command, servicename, interval, []string{username}, nil, nil)
 
 			if err != nil {
 				t.Error(err)
@@ -138,7 +141,6 @@ func TestNotifications(t *testing.T) {
 		})
 
 		t.Run("ServiceNotificationAlreadyExists", func(t *testing.T) {
-
 			hostname := "host"
 			servicename := "test"
 			checkCommand := "random"
@@ -147,10 +149,28 @@ func TestNotifications(t *testing.T) {
 			interval := 1800
 			username := "user"
 
-			_, _ = icingaServer.CreateUser(username, "user@example.com", nil)
-			_, _ = icingaServer.CreateService(servicename, hostname, checkCommand, nil, nil)
-			_, err := icingaServer.CreateNotification(notificationName, hostname, command, servicename, interval, []string{username}, nil, nil)
+			_, _ = icingaServer.CreateUser(ctx, username, "user@example.com", nil)
+			_, _ = icingaServer.CreateService(ctx, servicename, hostname, checkCommand, nil, nil)
+			_, err := icingaServer.CreateNotification(ctx, notificationName, hostname, command, servicename, interval, []string{username}, nil, nil)
 			if err == nil {
+				t.Error("expected error, got nil")
+			}
+		})
+	})
+
+	t.Run("Update", func(t *testing.T) {
+		t.Run("HostNotification", func(t *testing.T) {
+			hostname := "host"
+			notificationname := hostname + "!" + hostname
+			attrs := NotificationAttrs{
+				Command:  "mail-host-notification",
+				Interval: 3600,
+				Vars: map[string]string{
+					"vars.custom_field": "updated",
+				},
+			}
+			_, err := icingaServer.UpdateNotification(ctx, notificationname, attrs)
+			if err != nil {
 				t.Error(err)
 			}
 		})
@@ -161,33 +181,31 @@ func TestNotifications(t *testing.T) {
 			hostname := "host"
 			servicename := "test"
 			notificationName := hostname + "!" + servicename + "!" + hostname + "-" + servicename
-			err := icingaServer.DeleteNotification(notificationName)
+			err := icingaServer.DeleteNotification(ctx, notificationName)
 			if err != nil {
 				t.Error(err)
 			}
 		})
 
 		t.Run("TestDeleteServiceNotificationDNE", func(t *testing.T) {
-
 			hostname := "host"
 			servicename := "test"
 			notificationName := hostname + "!" + servicename + "!" + hostname + "-" + servicename
 
-			err := icingaServer.DeleteNotification(notificationName)
-			if err.Error() != "No objects found." {
+			err := icingaServer.DeleteNotification(ctx, notificationName)
+			if err == nil || err.Error() != "No objects found." {
 				t.Error(err)
 			}
 		})
 
 		t.Run("TestDeleteHostNotification", func(t *testing.T) {
-
 			hostname := "host"
 			notificationName := hostname + "!" + hostname
 			username := "user"
 
-			err := icingaServer.DeleteNotification(notificationName)
-			_ = icingaServer.DeleteHost(hostname)
-			_ = icingaServer.DeleteUser(username)
+			err := icingaServer.DeleteNotification(ctx, notificationName)
+			_ = icingaServer.DeleteHost(ctx, hostname)
+			_ = icingaServer.DeleteUser(ctx, username)
 
 			if err != nil {
 				t.Error(err)
@@ -195,23 +213,21 @@ func TestNotifications(t *testing.T) {
 		})
 
 		t.Run("TestDeleteHostNotificationDNE", func(t *testing.T) {
-
 			hostname := "host"
 			notificationName := hostname + "!" + hostname
 
-			err := icingaServer.DeleteNotification(notificationName)
+			err := icingaServer.DeleteNotification(ctx, notificationName)
 
-			if err.Error() != "No objects found." {
+			if err == nil || err.Error() != "No objects found." {
 				t.Error(err)
 			}
 		})
 
 		t.Run("TestDeleteNotificationNonAPI", func(t *testing.T) {
-
 			notificationName := "mail-icingaadmin"
 
-			err := icingaServer.DeleteNotification(notificationName)
-			if err.Error() != "No objects found." {
+			err := icingaServer.DeleteNotification(ctx, notificationName)
+			if err == nil || err.Error() != "No objects found." {
 				t.Error(err)
 			}
 		})

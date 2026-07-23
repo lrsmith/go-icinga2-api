@@ -1,6 +1,7 @@
 package iapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,23 +11,11 @@ import (
 const apiUserEndpoint = "/objects/apiusers"
 
 // GetApiUser fetches an ApiUser by its name.
-func (server *Server) GetApiUser(name string) ([]ApiUserStruct, error) {
-	endpoint := fmt.Sprintf("%v/%v", apiUserEndpoint, name)
-	results, err := server.NewAPIRequest(http.MethodGet, endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Contents of the results is an interface object. Need to convert it to json first.
-	jsonStr, err := json.Marshal(results.Results)
-	if err != nil {
-		return nil, err
-	}
-
-	// then the JSON can be pushed into the appropriate struct.
-	// Note : Results is a slice so much push into a slice.
+func (server *Server) GetApiUser(ctx context.Context, name string) ([]ApiUserStruct, error) {
 	var apiUsers []ApiUserStruct
-	if err := json.Unmarshal(jsonStr, &apiUsers); err != nil {
+	endpoint := fmt.Sprintf("%v/%v", apiUserEndpoint, name)
+	_, err := server.NewAPIRequest(ctx, http.MethodGet, endpoint, nil, &apiUsers)
+	if err != nil {
 		return nil, err
 	}
 
@@ -38,11 +27,11 @@ func (server *Server) GetApiUser(name string) ([]ApiUserStruct, error) {
 		return nil, errors.New("found more than one matching apiuser")
 	}
 
-	return apiUsers, err
+	return apiUsers, nil
 }
 
 // CreateApiUser creates a new ApiUser with its name, password, clientCNs, and permissions.
-func (server *Server) CreateApiUser(name, password string, clientCN string, permissions []string) ([]ApiUserStruct, error) {
+func (server *Server) CreateApiUser(ctx context.Context, name, password string, clientCN string, permissions []string) ([]ApiUserStruct, error) {
 	var newAttrs ApiUserAttrs
 	newAttrs.Password = password
 	newAttrs.ClientCN = clientCN
@@ -63,21 +52,20 @@ func (server *Server) CreateApiUser(name, password string, clientCN string, perm
 	}
 
 	endpoint := fmt.Sprintf("%v/%v", apiUserEndpoint, name)
-	results, err := server.NewAPIRequest(http.MethodPut, endpoint, payloadJSON)
+	results, err := server.NewAPIRequest(ctx, http.MethodPut, endpoint, payloadJSON, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	if results.Code == http.StatusOK {
-		apiUsers, err := server.GetApiUser(name)
-		return apiUsers, err
+		return server.GetApiUser(ctx, name)
 	}
 
 	return nil, fmt.Errorf("%s", results.ErrorString)
 }
 
 // UpdateApiUser updates an ApiUser with its params.
-func (server *Server) UpdateApiUser(name string, params *ApiUserAttrs) ([]ApiUserStruct, error) {
+func (server *Server) UpdateApiUser(ctx context.Context, name string, params *ApiUserAttrs) ([]ApiUserStruct, error) {
 	attrs := make(map[string]interface{})
 	if params.Password != "" {
 		attrs["password"] = params.Password
@@ -96,23 +84,22 @@ func (server *Server) UpdateApiUser(name string, params *ApiUserAttrs) ([]ApiUse
 	}
 
 	endpoint := fmt.Sprintf("%v/%v", apiUserEndpoint, name)
-	results, err := server.NewAPIRequest(http.MethodPost, endpoint, attrsBody)
+	results, err := server.NewAPIRequest(ctx, http.MethodPost, endpoint, attrsBody, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	if results.Code == http.StatusOK {
-		apiUsers, err := server.GetApiUser(name)
-		return apiUsers, err
+		return server.GetApiUser(ctx, name)
 	}
 
 	return nil, fmt.Errorf("%s", results.ErrorString)
 }
 
 // DeleteApiUser deletes an ApiUser by its name.
-func (server *Server) DeleteApiUser(name string) error {
+func (server *Server) DeleteApiUser(ctx context.Context, name string) error {
 	endpoint := fmt.Sprintf("%v/%v", apiUserEndpoint, name)
-	results, err := server.NewAPIRequest(http.MethodDelete, endpoint, nil)
+	results, err := server.NewAPIRequest(ctx, http.MethodDelete, endpoint, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -125,8 +112,8 @@ func (server *Server) DeleteApiUser(name string) error {
 }
 
 // ApiUserExists returns true if an ApiUser exists
-func (server *Server) ApiUserExists(name string) (bool, error) {
-	apiUsers, err := server.GetApiUser(name)
+func (server *Server) ApiUserExists(ctx context.Context, name string) (bool, error) {
+	apiUsers, err := server.GetApiUser(ctx, name)
 	if err != nil {
 		return false, err
 	}

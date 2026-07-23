@@ -1,5 +1,7 @@
 package iapi
 
+import "encoding/json"
+
 /*
 Currently to get something working and that can be refactored there is a lot of duplicate and overlapping decleration. In
 part this is because when a variable is defined it is set to a default value. This has been problematic with having an attrs
@@ -91,9 +93,9 @@ type HostAttrs struct {
 type APIResult struct {
 	Error       float64 `json:"error"`
 	ErrorString string
-	Status      string      `json:"status"`
-	Code        int         `json:"code"`
-	Results     interface{} `json:"results"`
+	Status      string          `json:"status"`
+	Code        int             `json:"code"`
+	Results     json.RawMessage `json:"results"`
 }
 
 // HostgroupUpdateResult stores the API response after updating a Hostgroup
