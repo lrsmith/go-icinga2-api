@@ -1,18 +1,28 @@
 package iapi
 
 import (
+	"context"
 	"testing"
 )
 
 func TestServices(t *testing.T) {
-	icingaServer := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+	icingaServer, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	ctx := context.Background()
+
 	testHostName := "c1-mysql-1"
-	_, err := icingaServer.CreateHost(testHostName, "127.0.0.1", "", "hostalive", nil, nil, nil, "")
+	_, err = icingaServer.CreateHost(ctx, testHostName, "127.0.0.1", "", "hostalive", nil, nil, nil, "")
 	if err != nil {
 		t.Error(err)
 	}
 	defer func() {
-		_ = icingaServer.DeleteHost(testHostName)
+		_ = icingaServer.DeleteHost(ctx, testHostName)
 	}()
 
 	t.Run("CreateService", func(t *testing.T) {
@@ -23,7 +33,7 @@ func TestServices(t *testing.T) {
 			servicename := "ssh"
 			checkCommand := "ssh"
 
-			_, err := icingaServer.CreateService(servicename, nonExistingHost, checkCommand, nil, nil)
+			_, err := icingaServer.CreateService(ctx, servicename, nonExistingHost, checkCommand, nil, nil)
 			if err == nil {
 				t.Error("ServiceHostDoNotExists: expected error returning, got nil")
 			}
@@ -34,7 +44,7 @@ func TestServices(t *testing.T) {
 			servicename := "ssh"
 			checkCommand := "ssh"
 
-			_, err := icingaServer.CreateService(servicename, testHostName, checkCommand, nil, nil)
+			_, err := icingaServer.CreateService(ctx, servicename, testHostName, checkCommand, nil, nil)
 			if err != nil {
 				t.Errorf("Error : Failed to create service %s!%s : %s", testHostName, servicename, err)
 			}
@@ -46,7 +56,7 @@ func TestServices(t *testing.T) {
 			variables := make(map[string]string)
 			variables["vars.nrpe_command"] = "check_load"
 
-			_, err := icingaServer.CreateService(servicename, testHostName, checkCommand, variables, nil)
+			_, err := icingaServer.CreateService(ctx, servicename, testHostName, checkCommand, variables, nil)
 			if err != nil {
 				t.Errorf("Error : Failed to create service %s!%s : %s", testHostName, servicename, err)
 			}
@@ -59,7 +69,7 @@ func TestServices(t *testing.T) {
 			variables["vars.nrpe_command"] = "check_load"
 			serviceTemplates := []string{"generic-service", "holiwi"}
 
-			_, err = icingaServer.CreateService(servicename, testHostName, checkCommand, variables, serviceTemplates)
+			_, err = icingaServer.CreateService(ctx, servicename, testHostName, checkCommand, variables, serviceTemplates)
 			if err != nil {
 				t.Errorf("Error : Failed to create service %s!%s : %s", testHostName, servicename, err)
 			}
@@ -70,7 +80,7 @@ func TestServices(t *testing.T) {
 			servicename := "ssh"
 			checkCommand := "ssh"
 
-			_, err = icingaServer.CreateService(servicename, testHostName, checkCommand, nil, nil)
+			_, err = icingaServer.CreateService(ctx, servicename, testHostName, checkCommand, nil, nil)
 			if err == nil {
 				t.Error("TestCreateServiceAlreadyExists: expected error returning, got nil")
 			}
@@ -80,7 +90,7 @@ func TestServices(t *testing.T) {
 	t.Run("ReadService", func(t *testing.T) {
 		t.Run("ValidService", func(t *testing.T) {
 			servicename := "ssh"
-			_, err := icingaServer.GetService(servicename, testHostName)
+			_, err := icingaServer.GetService(ctx, servicename, testHostName)
 			if err != nil {
 				t.Error(err)
 			}
@@ -88,7 +98,23 @@ func TestServices(t *testing.T) {
 
 		t.Run("InvalidService", func(t *testing.T) {
 			servicename := "foo"
-			_, err := icingaServer.GetService(servicename, testHostName)
+			_, err := icingaServer.GetService(ctx, servicename, testHostName)
+			if err != nil {
+				t.Error(err)
+			}
+		})
+	})
+
+	t.Run("UpdateService", func(t *testing.T) {
+		t.Run("ValidService", func(t *testing.T) {
+			servicename := "nrpe"
+			attrs := ServiceAttrs{
+				CheckCommand: "nrpe",
+				Vars: map[string]string{
+					"vars.nrpe_command": "check_updated",
+				},
+			}
+			_, err := icingaServer.UpdateService(ctx, servicename, testHostName, attrs)
 			if err != nil {
 				t.Error(err)
 			}
@@ -101,7 +127,7 @@ func TestServices(t *testing.T) {
 		t.Run("HostAndService", func(t *testing.T) {
 			servicename := "ssh"
 
-			err := icingaServer.DeleteService(servicename, testHostName)
+			err := icingaServer.DeleteService(ctx, servicename, testHostName)
 			if err != nil {
 				t.Error(err)
 			}
@@ -113,8 +139,8 @@ func TestServices(t *testing.T) {
 			hostname := "c1-test-1"
 			servicename := "ssh"
 
-			err := icingaServer.DeleteService(servicename, hostname)
-			if err.Error() != "No objects found." {
+			err := icingaServer.DeleteService(ctx, servicename, hostname)
+			if err == nil || err.Error() != "No objects found." {
 				t.Error(err)
 			}
 		})
@@ -123,8 +149,8 @@ func TestServices(t *testing.T) {
 		// Should get an error abot no object found
 		t.Run("ServiceDoNotExists", func(t *testing.T) {
 			servicename := "foo"
-			err := icingaServer.DeleteService(servicename, testHostName)
-			if err.Error() != "No objects found." {
+			err := icingaServer.DeleteService(ctx, servicename, testHostName)
+			if err == nil || err.Error() != "No objects found." {
 				t.Error(err)
 			}
 		})
@@ -135,8 +161,8 @@ func TestServices(t *testing.T) {
 			hostname := "docker-icinga2"
 			servicename := "random-001"
 
-			err := icingaServer.DeleteService(servicename, hostname)
-			if err.Error() != "No objects found." {
+			err := icingaServer.DeleteService(ctx, servicename, hostname)
+			if err == nil || err.Error() != "No objects found." {
 				t.Error(err)
 			}
 		})

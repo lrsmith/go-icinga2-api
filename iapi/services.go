@@ -1,38 +1,24 @@
 package iapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 // GetService ...
-func (server *Server) GetService(servicename, hostname string) ([]ServiceStruct, error) {
-
+func (server *Server) GetService(ctx context.Context, servicename, hostname string) ([]ServiceStruct, error) {
 	var services []ServiceStruct
-	results, err := server.NewAPIRequest("GET", "/objects/services/"+hostname+"!"+servicename, nil)
+	_, err := server.NewAPIRequest(ctx, "GET", "/objects/services/"+hostname+"!"+servicename, nil, &services)
 	if err != nil {
 		return nil, err
 	}
-
-	// Contents of the results is an interface object. Need to convert it to json first.
-	jsonStr, marshalErr := json.Marshal(results.Results)
-	if marshalErr != nil {
-		return nil, marshalErr
-	}
-
-	// then the JSON can be pushed into the appropriate struct.
-	// Note : Results is a slice so much push into a slice.
-
-	if unmarshalErr := json.Unmarshal(jsonStr, &services); unmarshalErr != nil {
-		return nil, unmarshalErr
-	}
-
-	return services, err
-
+	return services, nil
 }
 
 // CreateService ...
-func (server *Server) CreateService(servicename, hostname, checkCommand string, variables map[string]string, templates []string) ([]ServiceStruct, error) {
+func (server *Server) CreateService(ctx context.Context, servicename, hostname, checkCommand string, variables map[string]string, templates []string) ([]ServiceStruct, error) {
 	var newAttrs ServiceAttrs
 	newAttrs.CheckCommand = checkCommand
 	newAttrs.Vars = variables
@@ -48,22 +34,44 @@ func (server *Server) CreateService(servicename, hostname, checkCommand string, 
 	}
 
 	// Make the API request to create the hosts.
-	results, err := server.NewAPIRequest("PUT", "/objects/services/"+hostname+"!"+servicename, []byte(payloadJSON))
+	results, err := server.NewAPIRequest(ctx, "PUT", "/objects/services/"+hostname+"!"+servicename, payloadJSON, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	if results.Code == 200 {
-		services, err := server.GetService(servicename, hostname)
-		return services, err
+		return server.GetService(ctx, servicename, hostname)
 	}
 
 	return nil, fmt.Errorf("%s", results.ErrorString)
 }
 
+// UpdateService updates a Service with its attrs in-place
+func (server *Server) UpdateService(ctx context.Context, servicename, hostname string, attrs ServiceAttrs) ([]ServiceStruct, error) {
+	service := ServiceStruct{
+		Attrs: attrs,
+	}
+
+	body, err := json.Marshal(service)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := server.NewAPIRequest(ctx, "POST", "/objects/services/"+hostname+"!"+servicename, body, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if r.Code != http.StatusOK {
+		return nil, fmt.Errorf("expected %d, got %d", http.StatusOK, r.Code)
+	}
+
+	return server.GetService(ctx, servicename, hostname)
+}
+
 // DeleteService ...
-func (server *Server) DeleteService(servicename, hostname string) error {
-	results, err := server.NewAPIRequest("DELETE", "/objects/services/"+hostname+"!"+servicename+"?cascade=1", nil)
+func (server *Server) DeleteService(ctx context.Context, servicename, hostname string) error {
+	results, err := server.NewAPIRequest(ctx, "DELETE", "/objects/services/"+hostname+"!"+servicename+"?cascade=1", nil, nil)
 	if err != nil {
 		return err
 	}

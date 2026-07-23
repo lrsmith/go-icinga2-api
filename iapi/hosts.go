@@ -13,36 +13,20 @@ import (
 )
 
 // GetHost ...
-func (server *Server) GetHost(hostname string) ([]HostStruct, error) {
-
+func (server *Server) GetHost(ctx context.Context, hostname string) ([]HostStruct, error) {
 	var hosts []HostStruct
 
-	results, err := server.NewAPIRequest(http.MethodGet, "/objects/hosts/"+hostname, nil)
+	_, err := server.NewAPIRequest(ctx, http.MethodGet, "/objects/hosts/"+hostname, nil, &hosts)
 	if err != nil {
 		return nil, err
 	}
 
-	// Contents of the results is an interface object. Need to convert it to json first.
-	jsonStr, marshalErr := json.Marshal(results.Results)
-	if marshalErr != nil {
-		return nil, marshalErr
-	}
-
-	// then the JSON can be pushed into the appropriate struct.
-	// Note : Results is a slice so much push into a slice.
-
-	if unmarshalErr := json.Unmarshal(jsonStr, &hosts); unmarshalErr != nil {
-		return nil, unmarshalErr
-	}
-
-	return hosts, err
-
+	return hosts, nil
 }
 
 // CreateHost creates a host.
 // When a context deadline is exceeded, wait for the host to be created if a number of tries is defined.
-func (server *Server) CreateHost(hostname, address, address6 string, checkCommand string, variables map[string]interface{}, templates []string, groups []string, zone string) (hosts []HostStruct, err error) {
-
+func (server *Server) CreateHost(ctx context.Context, hostname, address, address6 string, checkCommand string, variables map[string]interface{}, templates []string, groups []string, zone string) (hosts []HostStruct, err error) {
 	var newAttrs HostAttrs
 	newAttrs.Address = address
 	newAttrs.Address6 = address6
@@ -69,9 +53,11 @@ func (server *Server) CreateHost(hostname, address, address6 string, checkComman
 
 	// Create the host
 	results, err := server.NewAPIRequest(
+		ctx,
 		http.MethodPut,
 		fmt.Sprintf("/objects/hosts/%s", url.PathEscape(hostname)),
-		[]byte(payloadJSON),
+		payloadJSON,
+		nil,
 	)
 
 	// Ignore context deadline exceeded
@@ -86,7 +72,7 @@ func (server *Server) CreateHost(hostname, address, address6 string, checkComman
 
 	// Wait for the host to be created
 	operation := func() ([]HostStruct, error) {
-		hosts, err := server.GetHost(hostname)
+		hosts, err := server.GetHost(ctx, hostname)
 		if err != nil {
 			return nil, backoff.Permanent(err)
 		}
@@ -102,7 +88,7 @@ func (server *Server) CreateHost(hostname, address, address6 string, checkComman
 	tries := uint(math.Max(float64(server.Tries), 1.0))
 
 	return backoff.Retry(
-		context.Background(),
+		ctx,
 		operation,
 		backoff.WithBackOff(backoff.NewConstantBackOff(server.RetryDelay)),
 		backoff.WithMaxTries(tries),
@@ -110,8 +96,7 @@ func (server *Server) CreateHost(hostname, address, address6 string, checkComman
 }
 
 // UpdateHost updates a Host with its attrs
-func (server *Server) UpdateHost(name string, attrs HostAttrs) ([]HostStruct, error) {
-
+func (server *Server) UpdateHost(ctx context.Context, name string, attrs HostAttrs) ([]HostStruct, error) {
 	host := HostStruct{
 		Attrs: attrs,
 	}
@@ -121,7 +106,7 @@ func (server *Server) UpdateHost(name string, attrs HostAttrs) ([]HostStruct, er
 		return nil, err
 	}
 
-	r, err := server.NewAPIRequest(http.MethodPost, "/objects/hosts/"+name, body)
+	r, err := server.NewAPIRequest(ctx, http.MethodPost, "/objects/hosts/"+name, body, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -130,15 +115,11 @@ func (server *Server) UpdateHost(name string, attrs HostAttrs) ([]HostStruct, er
 		return nil, fmt.Errorf("expected %d, got %d", http.StatusOK, r.Code)
 	}
 
-	jsonResponse, err := json.Marshal(r.Results)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal the host response: %v", err)
-	}
-
 	var results []HostUpdateResult
-	err = json.Unmarshal(jsonResponse, &results)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal the host response: %v", err)
+	if len(r.Results) > 0 {
+		if unmarshalErr := json.Unmarshal(r.Results, &results); unmarshalErr != nil {
+			return nil, fmt.Errorf("failed to unmarshal the host response: %v", unmarshalErr)
+		}
 	}
 
 	for _, result := range results {
@@ -147,15 +128,17 @@ func (server *Server) UpdateHost(name string, attrs HostAttrs) ([]HostStruct, er
 		}
 	}
 
-	return server.GetHost(name)
+	return server.GetHost(ctx, name)
 }
 
 // DeleteHost deletes a host.
 // When a context deadline is exceeded, wait for the host to be deleted if a number of tries is defined.
-func (server *Server) DeleteHost(hostname string) error {
+func (server *Server) DeleteHost(ctx context.Context, hostname string) error {
 	results, err := server.NewAPIRequest(
+		ctx,
 		http.MethodDelete,
 		fmt.Sprintf("/objects/hosts/%s?cascade=1", url.PathEscape(hostname)),
+		nil,
 		nil,
 	)
 
@@ -171,7 +154,7 @@ func (server *Server) DeleteHost(hostname string) error {
 
 	// Wait for the host to be deleted
 	operation := func() (string, error) {
-		exists, err := server.HostExists(hostname)
+		exists, err := server.HostExists(ctx, hostname)
 		if err != nil {
 			return "", backoff.Permanent(err)
 		}
@@ -185,7 +168,7 @@ func (server *Server) DeleteHost(hostname string) error {
 	tries := uint(math.Max(float64(server.Tries), 1.0))
 
 	_, err = backoff.Retry(
-		context.Background(),
+		ctx,
 		operation,
 		backoff.WithBackOff(backoff.NewConstantBackOff(server.RetryDelay)),
 		backoff.WithMaxTries(tries),
@@ -194,8 +177,8 @@ func (server *Server) DeleteHost(hostname string) error {
 }
 
 // HostExists returns true if a Host exists
-func (server *Server) HostExists(hostname string) (bool, error) {
-	hosts, err := server.GetHost(hostname)
+func (server *Server) HostExists(ctx context.Context, hostname string) (bool, error) {
+	hosts, err := server.GetHost(ctx, hostname)
 	if err != nil {
 		return false, err
 	}

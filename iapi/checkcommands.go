@@ -1,38 +1,24 @@
 package iapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 // GetCheckcommand ...
-func (server *Server) GetCheckcommand(name string) ([]CheckcommandStruct, error) {
-
+func (server *Server) GetCheckcommand(ctx context.Context, name string) ([]CheckcommandStruct, error) {
 	var checkcommands []CheckcommandStruct
-	results, err := server.NewAPIRequest("GET", "/objects/checkcommands/"+name, nil)
+	_, err := server.NewAPIRequest(ctx, "GET", "/objects/checkcommands/"+name, nil, &checkcommands)
 	if err != nil {
 		return nil, err
 	}
-
-	// Contents of the results is an interface object. Need to convert it to json first.
-	jsonStr, marshalErr := json.Marshal(results.Results)
-	if marshalErr != nil {
-		return nil, marshalErr
-	}
-
-	// then the JSON can be pushed into the appropriate struct.
-	// Note : Results is a slice so much push into a slice.
-
-	if unmarshalErr := json.Unmarshal(jsonStr, &checkcommands); unmarshalErr != nil {
-		return nil, unmarshalErr
-	}
-
-	return checkcommands, err
-
+	return checkcommands, nil
 }
 
 // CreateCheckcommand ...
-func (server *Server) CreateCheckcommand(name, command string, commandArguments map[string]string) ([]CheckcommandStruct, error) {
+func (server *Server) CreateCheckcommand(ctx context.Context, name, command string, commandArguments map[string]string) ([]CheckcommandStruct, error) {
 	var newAttrs CheckcommandAttrs
 	newAttrs.Command = []string{command}
 	newAttrs.Arguments = commandArguments
@@ -48,23 +34,45 @@ func (server *Server) CreateCheckcommand(name, command string, commandArguments 
 		return nil, marshalErr
 	}
 
-	// Make the API request to create the hosts.
-	results, err := server.NewAPIRequest("PUT", "/objects/checkcommands/"+name, []byte(payloadJSON))
+	// Make the API request to create the checkcommands.
+	results, err := server.NewAPIRequest(ctx, "PUT", "/objects/checkcommands/"+name, payloadJSON, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	if results.Code == 200 {
-		theCheckcommand, err := server.GetCheckcommand(name)
-		return theCheckcommand, err
+		return server.GetCheckcommand(ctx, name)
 	}
 
 	return nil, fmt.Errorf("%s", results.ErrorString)
 }
 
+// UpdateCheckcommand updates a CheckCommand with its attrs in-place
+func (server *Server) UpdateCheckcommand(ctx context.Context, name string, attrs CheckcommandAttrs) ([]CheckcommandStruct, error) {
+	checkcommand := CheckcommandStruct{
+		Attrs: attrs,
+	}
+
+	body, err := json.Marshal(checkcommand)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := server.NewAPIRequest(ctx, "POST", "/objects/checkcommands/"+name, body, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if r.Code != http.StatusOK {
+		return nil, fmt.Errorf("expected %d, got %d", http.StatusOK, r.Code)
+	}
+
+	return server.GetCheckcommand(ctx, name)
+}
+
 // DeleteCheckcommand ...
-func (server *Server) DeleteCheckcommand(name string) error {
-	results, err := server.NewAPIRequest("DELETE", "/objects/checkcommands/"+name+"?cascade=1", nil)
+func (server *Server) DeleteCheckcommand(ctx context.Context, name string) error {
+	results, err := server.NewAPIRequest(ctx, "DELETE", "/objects/checkcommands/"+name+"?cascade=1", nil, nil)
 	if err != nil {
 		return err
 	}

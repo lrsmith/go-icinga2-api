@@ -1,18 +1,28 @@
 package iapi
 
 import (
+	"context"
 	"slices"
 	"testing"
 )
 
 func TestApiUsers(t *testing.T) {
-	icingaServer := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+	icingaServer, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	ctx := context.Background()
+
 	t.Run("Create", func(t *testing.T) {
 		t.Run("ApiUser", func(t *testing.T) {
 			name := "director"
 			password := "director-password"
 			permissions := []string{"*"}
-			_, err := icingaServer.CreateApiUser(name, password, "", permissions)
+			_, err := icingaServer.CreateApiUser(ctx, name, password, "", permissions)
 			if err != nil {
 				t.Error(err)
 			}
@@ -22,7 +32,7 @@ func TestApiUsers(t *testing.T) {
 			password := ""
 			clientCN := "director"
 			permissions := []string{"*"}
-			_, err := icingaServer.CreateApiUser(name, password, clientCN, permissions)
+			_, err := icingaServer.CreateApiUser(ctx, name, password, clientCN, permissions)
 			if err != nil {
 				t.Error(err)
 			}
@@ -33,7 +43,7 @@ func TestApiUsers(t *testing.T) {
 	t.Run("Read", func(t *testing.T) {
 		t.Run("ValidApiUser", func(t *testing.T) {
 			name := "director"
-			_, err := icingaServer.GetApiUser(name)
+			_, err := icingaServer.GetApiUser(ctx, name)
 			if err != nil {
 				t.Error(err)
 			}
@@ -41,7 +51,7 @@ func TestApiUsers(t *testing.T) {
 
 		t.Run("InvalidApiUser", func(t *testing.T) {
 			name := "some-nonexistent-user"
-			_, err := icingaServer.GetApiUser(name)
+			_, err := icingaServer.GetApiUser(ctx, name)
 			if err != nil {
 				t.Error(err)
 			}
@@ -52,19 +62,22 @@ func TestApiUsers(t *testing.T) {
 		apiUserName := "someApiUserName"
 		password := "secret"
 		permissions := []string{"*"}
-		_, err := icingaServer.CreateApiUser(apiUserName, password, "", permissions)
+		_, err := icingaServer.CreateApiUser(ctx, apiUserName, password, "", permissions)
 		if err != nil {
-			t.Error(err)
+			t.Fatalf("failed to create api user: %v", err)
 		}
-		defer icingaServer.DeleteApiUser(apiUserName)
+		defer icingaServer.DeleteApiUser(ctx, apiUserName)
 
 		secondPermissions := []string{"objects/query/Host", "objects/query/Service"}
 		params := &ApiUserAttrs{
 			Permissions: secondPermissions,
 		}
-		updatedApiUser, err := icingaServer.UpdateApiUser(apiUserName, params)
+		updatedApiUser, err := icingaServer.UpdateApiUser(ctx, apiUserName, params)
 		if err != nil {
-			t.Error(err)
+			t.Fatalf("failed to update api user: %v", err)
+		}
+		if len(updatedApiUser) == 0 {
+			t.Fatalf("expected updated api user slice to be non-empty")
 		}
 		if !slices.Equal(secondPermissions, updatedApiUser[0].Attrs.Permissions) {
 			t.Errorf("expected permissions are not found to be equal.")
@@ -74,7 +87,7 @@ func TestApiUsers(t *testing.T) {
 	t.Run("Exists", func(t *testing.T) {
 		t.Run("ApiUserFound", func(t *testing.T) {
 			name := "director"
-			exists, err := icingaServer.ApiUserExists(name)
+			exists, err := icingaServer.ApiUserExists(ctx, name)
 			if err != nil {
 				t.Error(err)
 			}
@@ -86,7 +99,7 @@ func TestApiUsers(t *testing.T) {
 
 		t.Run("ApiUserNotFound", func(t *testing.T) {
 			name := "some-nonexistent-user"
-			exists, err := icingaServer.ApiUserExists(name)
+			exists, err := icingaServer.ApiUserExists(ctx, name)
 			if err != nil {
 				t.Error(err)
 			}
@@ -100,14 +113,14 @@ func TestApiUsers(t *testing.T) {
 		// Delete ApiUser created via API. Should succeed
 		t.Run("ApiUser", func(t *testing.T) {
 			name := "director"
-			err := icingaServer.DeleteApiUser(name)
+			err := icingaServer.DeleteApiUser(ctx, name)
 			if err != nil {
 				t.Error(err)
 			}
 		})
 		t.Run("ApiUserWithCNs", func(t *testing.T) {
 			name := "director-client-cn"
-			err := icingaServer.DeleteApiUser(name)
+			err := icingaServer.DeleteApiUser(ctx, name)
 			if err != nil {
 				t.Error(err)
 			}
@@ -115,16 +128,16 @@ func TestApiUsers(t *testing.T) {
 
 		t.Run("ApiUserNonAPI", func(t *testing.T) {
 			name := "root" // Assuming this wasn't created via API or doesn't exist
-			err := icingaServer.DeleteApiUser(name)
+			err := icingaServer.DeleteApiUser(ctx, name)
 			if err == nil {
-				t.Error(err)
+				t.Error("expected error deleting non-api apiuser, got nil")
 			}
 		})
 
 		t.Run("ApiUserDNE", func(t *testing.T) {
 			name := "director" // Already deleted
-			err := icingaServer.DeleteApiUser(name)
-			if err.Error() != "No objects found." {
+			err := icingaServer.DeleteApiUser(ctx, name)
+			if err == nil || err.Error() != "No objects found." {
 				t.Error(err)
 			}
 		})

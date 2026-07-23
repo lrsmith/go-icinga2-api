@@ -1,6 +1,7 @@
 package iapi
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"strconv"
@@ -15,59 +16,74 @@ var ICINGA2_API_URL = os.Getenv("ICINGA2_API_URL")
 var ICINGA2_INSECURE_SKIP_TLS_VERIFY, _ = strconv.ParseBool(os.Getenv("ICINGA2_INSECURE_SKIP_TLS_VERIFY"))
 var ICINGA2_API_CA_CERT_FILE = os.Getenv("ICINGA2_API_CA_CERT_FILE")
 
-var Icinga2_Server = Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
+var Icinga2_Server *Server
+
+func TestMain(m *testing.M) {
+	Icinga2_Server, _ = New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0)
+	os.Exit(m.Run())
+}
+
+// Helper function to build a test server or skip the test if not configured.
+func getTestServer(t *testing.T) *Server {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+	return Icinga2_Server
+}
 
 func TestConnect(t *testing.T) {
-
-	v := os.Getenv("ICINGA2_API_URL")
-	if v == "" {
-		t.Fatal("ICINGA2_API_URL must be set for acceptance tests")
+	server := getTestServer(t)
+	err := server.Connect(context.Background())
+	if err != nil {
+		t.Fatalf("Failed to connect to Icinga Server: %v", err)
 	}
 
-	v = os.Getenv("ICINGA2_API_USER")
-	if v == "" {
-		t.Fatal("ICINGA2_API_USER must be set for acceptance tests")
-	}
-
-	v = os.Getenv("ICINGA2_API_PASSWORD")
-	if v == "" {
-		t.Fatal("ICINGA2_API_PASSWORD must be set for acceptance tests")
-	}
-
-	var Icinga2_Server = Server{"icinga-test", "icinga", ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
-	Icinga2_Server.Connect()
-
-	if Icinga2_Server.httpClient == nil {
-		t.Errorf("Failed to succesfully connect to Icinga Server")
+	if server.httpClient == nil {
+		t.Errorf("Failed to successfully connect to Icinga Server")
 	}
 }
 
 func TestConnectCA(t *testing.T) {
-
-	var Icinga2_Server = Server{"icinga-test", "icinga", ICINGA2_API_URL, false, ICINGA2_API_CA_CERT_FILE, 0, 0, nil}
-	err := Icinga2_Server.Connect()
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+	server, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, false, ICINGA2_API_CA_CERT_FILE, 0, 0)
 	if err != nil {
-		t.Errorf("Failed to succesfully connect to Icinga Server: %s", err)
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	err = server.Connect(context.Background())
+	if err != nil {
+		t.Errorf("Failed to successfully connect to Icinga Server: %s", err)
 	}
 
-	if Icinga2_Server.httpClient == nil {
-		t.Errorf("Failed to succesfully connect to Icinga Server")
+	if server.httpClient == nil {
+		t.Errorf("Failed to successfully connect to Icinga Server")
 	}
 }
 
 func TestConnectWithBadCredential(t *testing.T) {
-
-	var Icinga2_Server = Server{"unknownUser", "unknownPW", ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
-	err := Icinga2_Server.Connect()
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+	server, err := New("unknownUser", "unknownPW", ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	err = server.Connect(context.Background())
 	if err != nil {
 		t.Errorf("Did not fail with bad credentials : %s", err)
 	}
 }
 
 func TestConnectServerBadURINoVersion(t *testing.T) {
-
-	var Icinga2_Server = Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
-	result, _ := Icinga2_Server.NewAPIRequest("GET", "/status", nil)
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+	server, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	result, _ := server.NewAPIRequest(context.Background(), "GET", "/status", nil, nil)
 
 	if result.Code != 404 {
 		t.Errorf("Error : Did not get expected 404 error connection to bad URI, with no version.")
@@ -75,8 +91,8 @@ func TestConnectServerBadURINoVersion(t *testing.T) {
 }
 
 func TestNewAPIRequest(t *testing.T) {
-
-	result, _ := Icinga2_Server.NewAPIRequest("GET", "/status", nil)
+	server := getTestServer(t)
+	result, _ := server.NewAPIRequest(context.Background(), "GET", "/status", nil, nil)
 
 	if result.Code != 200 {
 		t.Errorf("%s", result.Status)
@@ -95,11 +111,13 @@ func TestNewAPIRequestWhileReloading(t *testing.T) {
 	)
 
 	tries := 0
-	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0, nil}
-	server.createHttpClient()
+	server, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
 	server.httpClient.Transport = mockTransport
 
-	results, err := server.NewAPIRequest("GET", "/status", nil)
+	results, err := server.NewAPIRequest(context.Background(), "GET", "/status", nil, nil)
 
 	if err == nil {
 		t.Errorf("expected error 'icinga is reloading', got nil")
@@ -139,11 +157,13 @@ func TestNewAPIRequestWhileReloadingWithRetries(t *testing.T) {
 	)
 
 	tries := 2
-	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0, nil}
-	server.createHttpClient()
+	server, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
 	server.httpClient.Transport = mockTransport
 
-	results, err := server.NewAPIRequest("GET", "/status", nil)
+	results, err := server.NewAPIRequest(context.Background(), "GET", "/status", nil, nil)
 
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)

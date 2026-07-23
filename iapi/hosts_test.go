@@ -11,10 +11,13 @@ import (
 )
 
 func TestGetValidHost(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
 
 	hostname := "c1-mysql-1"
 
-	_, err := Icinga2_Server.GetHost(hostname)
+	_, err := Icinga2_Server.GetHost(context.Background(), hostname)
 
 	if err != nil {
 		t.Error(err)
@@ -22,21 +25,27 @@ func TestGetValidHost(t *testing.T) {
 }
 
 func TestGetInvalidHost(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
 
 	hostname := "c2-mysql-1"
-	_, err := Icinga2_Server.GetHost(hostname)
+	_, err := Icinga2_Server.GetHost(context.Background(), hostname)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestCreateSimpleHost(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
 
 	hostname := "go-icinga2-api-1"
 	IPAddress := "127.0.0.2"
 	CheckCommand := "hostalive"
 
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, "", CheckCommand, nil, nil, nil, "")
+	_, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, nil, nil, nil, "")
 
 	if err != nil {
 		t.Error(err)
@@ -44,26 +53,32 @@ func TestCreateSimpleHost(t *testing.T) {
 }
 
 func TestCreateSimpleIPv6Host(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
 
 	hostname := "go-icinga2-api-3"
 	IPAddress := "127.0.0.2"
 	IP6Address := "::1"
 	CheckCommand := "hostalive"
 
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, IP6Address, CheckCommand, nil, nil, nil, "")
+	_, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, IP6Address, CheckCommand, nil, nil, nil, "")
 
 	if err != nil {
 		t.Error(err)
 	}
 
 	// Delete host after creating it.
-	deleteErr := Icinga2_Server.DeleteHost(hostname)
+	deleteErr := Icinga2_Server.DeleteHost(context.Background(), hostname)
 	if deleteErr != nil {
-		t.Error(err)
+		t.Error(deleteErr)
 	}
 }
 
 func TestCreateHostWithVariables(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
 
 	hostname := "go-icinga2-api-2"
 	IPAddress := "127.0.0.3"
@@ -75,70 +90,82 @@ func TestCreateHostWithVariables(t *testing.T) {
 	variables["vars.creator"] = "Terraform"
 	variables["vars.urls"] = []string{"test-url1.example.com", "test-url2.example.com"}
 
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, "", CheckCommand, variables, nil, nil, "")
+	_, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, variables, nil, nil, "")
 	if err != nil {
 		t.Error(err)
 	}
 
 	// Delete host after creating it.
-	deleteErr := Icinga2_Server.DeleteHost(hostname)
+	deleteErr := Icinga2_Server.DeleteHost(context.Background(), hostname)
 	if deleteErr != nil {
-		t.Error(err)
+		t.Error(deleteErr)
 	}
 }
 
 func TestCreateHostWithTemplates(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+
 	hostname := "go-icinga2-api-2"
 	IPAddress := "127.0.0.3"
 	CheckCommand := "hostalive"
 
 	templates := []string{"template1", "template2"}
 
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, "", CheckCommand, nil, templates, nil, "")
+	_, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, nil, templates, nil, "")
 	if err != nil {
 		t.Error(err)
 	}
 
 	// Delete host after creating it.
-	deleteErr := Icinga2_Server.DeleteHost(hostname)
+	deleteErr := Icinga2_Server.DeleteHost(context.Background(), hostname)
 	if deleteErr != nil {
-		t.Error(err)
+		t.Error(deleteErr)
 	}
 }
 
 func TestCreateHostWithGroup(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+
 	hostname := "go-icinga2-api-2"
 	IPAddress := "127.0.0.3"
 	CheckCommand := "hostalive"
 	Group := []string{"linux-servers"}
 
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, "", CheckCommand, nil, nil, Group, "")
+	_, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, nil, nil, Group, "")
 	if err != nil {
 		t.Error(err)
 	}
 
 	// Delete host after creating it.
-	deleteErr := Icinga2_Server.DeleteHost(hostname)
+	deleteErr := Icinga2_Server.DeleteHost(context.Background(), hostname)
 	if deleteErr != nil {
-		t.Error(err)
+		t.Error(deleteErr)
 	}
 }
 
 func TestCreateHostWithZone(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+
 	hostname := "go-icinga2-api-2"
 	IPAddress := "127.0.0.3"
 	CheckCommand := "hostalive"
 	Group := []string{"linux-servers"}
 
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, "", CheckCommand, nil, nil, Group, "master")
+	_, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, nil, nil, Group, "master")
 	if err != nil {
 		t.Error(err)
 	}
 
 	// Delete host after creating it.
-	deleteErr := Icinga2_Server.DeleteHost(hostname)
+	deleteErr := Icinga2_Server.DeleteHost(context.Background(), hostname)
 	if deleteErr != nil {
-		t.Error(err)
+		t.Error(deleteErr)
 	}
 }
 
@@ -156,11 +183,13 @@ func TestCreateHostWithDeadlineExceeded(t *testing.T) {
 		httpmock.NewErrorResponder(context.DeadlineExceeded),
 	)
 
-	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
-	server.createHttpClient()
+	server, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
 	server.httpClient.Transport = mockTransport
 
-	_, err := server.CreateHost(hostname, IPAddress, "", CheckCommand, nil, nil, nil, "")
+	_, err = server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, nil, nil, nil, "")
 
 	if err == nil {
 		t.Errorf("expected context deadline exceeded error, got nil")
@@ -195,11 +224,13 @@ func TestCreateHostWithDeadlineExceededAndRetries(t *testing.T) {
 	)
 
 	tries := 2
-	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0, nil}
-	server.createHttpClient()
+	server, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
 	server.httpClient.Transport = mockTransport
 
-	_, err := server.CreateHost(hostname, IPAddress, "", CheckCommand, nil, nil, nil, "")
+	_, err = server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, nil, nil, nil, "")
 
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -232,19 +263,26 @@ func TestCreateHostWithDeadlineExceededAndRetries(t *testing.T) {
 }
 
 func TestDeleteHost(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
 
 	hostname := "go-icinga2-api-1"
 
-	err := Icinga2_Server.DeleteHost(hostname)
+	err := Icinga2_Server.DeleteHost(context.Background(), hostname)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestDeleteHostDNE(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+
 	hostname := "go-icinga2-api-1"
-	err := Icinga2_Server.DeleteHost(hostname)
-	if err.Error() != "No objects found." {
+	err := Icinga2_Server.DeleteHost(context.Background(), hostname)
+	if err == nil || err.Error() != "No objects found." {
 		t.Error(err)
 	}
 }
@@ -261,11 +299,13 @@ func TestDeleteHostWithDeadlineExceeded(t *testing.T) {
 		httpmock.NewErrorResponder(context.DeadlineExceeded),
 	)
 
-	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0, nil}
-	server.createHttpClient()
+	server, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
 	server.httpClient.Transport = mockTransport
 
-	err := server.DeleteHost(hostname)
+	err = server.DeleteHost(context.Background(), hostname)
 	if err == nil {
 		t.Errorf("expected context deadline exceeded error, got nil")
 	}
@@ -299,11 +339,13 @@ func TestDeleteHostWithDeadlineExceededAndRetries(t *testing.T) {
 	)
 
 	tries := 2
-	server := Server{ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0, nil}
-	server.createHttpClient()
+	server, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
 	server.httpClient.Transport = mockTransport
 
-	err := server.DeleteHost(hostname)
+	err = server.DeleteHost(context.Background(), hostname)
 
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -336,17 +378,21 @@ func TestDeleteHostWithDeadlineExceededAndRetries(t *testing.T) {
 }
 
 func TestHostExistsFound(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+
 	hostname := "go-icinga2-api-4"
 	IPAddress := "127.0.0.4"
 	CheckCommand := "hostalive"
 
-	_, err := Icinga2_Server.CreateHost(hostname, IPAddress, "", CheckCommand, nil, nil, nil, "")
+	_, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, nil, nil, nil, "")
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	exists, err := Icinga2_Server.HostExists(hostname)
+	exists, err := Icinga2_Server.HostExists(context.Background(), hostname)
 	if err != nil {
 		t.Error(err)
 	}
@@ -355,16 +401,20 @@ func TestHostExistsFound(t *testing.T) {
 		t.Error("host must exist")
 	}
 
-	err = Icinga2_Server.DeleteHost(hostname)
+	err = Icinga2_Server.DeleteHost(context.Background(), hostname)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestHostExistsNotFound(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+
 	hostname := "go-icinga2-api-4-not-found"
 
-	exists, err := Icinga2_Server.HostExists(hostname)
+	exists, err := Icinga2_Server.HostExists(context.Background(), hostname)
 	if err != nil {
 		t.Error(err)
 	}
