@@ -2,6 +2,8 @@ package iapi
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"testing"
 )
 
@@ -54,11 +56,16 @@ func TestServices(t *testing.T) {
 			servicename := "nrpe"
 			checkCommand := "nrpe"
 			variables := make(map[string]string)
-			variables["vars.nrpe_command"] = "check_load"
+			variables["nrpe_command"] = "check_load"
 
-			_, err := icingaServer.CreateService(ctx, servicename, testHostName, checkCommand, variables, nil)
+			services, err := icingaServer.CreateService(ctx, servicename, testHostName, checkCommand, variables, nil)
 			if err != nil {
 				t.Errorf("Error : Failed to create service %s!%s : %s", testHostName, servicename, err)
+			}
+
+			vars := serviceVars(t, services, testHostName+"!"+servicename)
+			if vars["nrpe_command"] != "check_load" {
+				t.Errorf("expected variable nrpe_command to be check_load, got %v", vars["nrpe_command"])
 			}
 		})
 
@@ -66,12 +73,50 @@ func TestServices(t *testing.T) {
 			servicename := "nrpe-check"
 			checkCommand := "nrpe"
 			variables := make(map[string]string)
-			variables["vars.nrpe_command"] = "check_load"
-			serviceTemplates := []string{"generic-service", "holiwi"}
+			variables["nrpe_command"] = "check_load"
+			serviceTemplates := []string{"go-icinga2-api-test-service"}
 
-			_, err = icingaServer.CreateService(ctx, servicename, testHostName, checkCommand, variables, serviceTemplates)
+			services, err := icingaServer.CreateService(ctx, servicename, testHostName, checkCommand, variables, serviceTemplates)
 			if err != nil {
-				t.Errorf("Error : Failed to create service %s!%s : %s", testHostName, servicename, err)
+				t.Fatalf("Error : Failed to create service %s!%s : %s", testHostName, servicename, err)
+			}
+
+			name := testHostName + "!" + servicename
+			for _, service := range services {
+				if service.Name != name {
+					continue
+				}
+				// Icinga resolves the imports of the imported templates too and
+				// reports the service itself first
+				expected := []string{servicename, "go-icinga2-api-test-service", "generic-service"}
+				if !slices.Equal(service.Attrs.Templates, expected) {
+					t.Errorf("expected templates %v, got %v", expected, service.Attrs.Templates)
+				}
+			}
+
+			vars := serviceVars(t, services, name)
+			if vars["nrpe_command"] != "check_load" {
+				t.Errorf("expected variable nrpe_command to be check_load, got %v", vars["nrpe_command"])
+			}
+			// A variable of the template only reaches the service when the
+			// template is imported instead of being stored as an attribute
+			if vars["service_owner"] != "team" {
+				t.Errorf("expected variable service_owner to be inherited from the template, got %v", vars["service_owner"])
+			}
+		})
+
+		t.Run("WithUnknownTemplate", func(t *testing.T) {
+			servicename := "unknown-template"
+			checkCommand := "nrpe"
+			serviceTemplates := []string{"go-icinga2-api-test-does-not-exist"}
+
+			_, err := icingaServer.CreateService(ctx, servicename, testHostName, checkCommand, nil, serviceTemplates)
+			if err == nil {
+				t.Fatalf("expected the creation of %s to be rejected", servicename)
+			}
+
+			if !strings.Contains(err.Error(), "Import references unknown template") {
+				t.Errorf("expected the reason of the rejection, got %s", err)
 			}
 		})
 
@@ -117,6 +162,23 @@ func TestServices(t *testing.T) {
 			_, err := icingaServer.UpdateService(ctx, servicename, testHostName, attrs)
 			if err != nil {
 				t.Error(err)
+			}
+		})
+
+		// The templates of a service are immutable, Icinga reports a per object
+		// error while answering 200
+		t.Run("TemplatesAreRejected", func(t *testing.T) {
+			servicename := "nrpe-check"
+			attrs := ServiceAttrs{
+				CheckCommand: "nrpe",
+				Templates:    []string{"go-icinga2-api-test-service"},
+			}
+			_, err := icingaServer.UpdateService(ctx, servicename, testHostName, attrs)
+			if err == nil {
+				t.Fatal("expected the update to be rejected")
+			}
+			if !strings.Contains(err.Error(), "Attribute cannot be modified") {
+				t.Errorf("expected the reason of the rejection, got %s", err)
 			}
 		})
 	})
@@ -168,4 +230,23 @@ func TestServices(t *testing.T) {
 		})
 	})
 
+}
+
+// serviceVars returns the resolved variables of a service.
+func serviceVars(t *testing.T, services []ServiceStruct, name string) map[string]interface{} {
+	t.Helper()
+
+	for _, service := range services {
+		if service.Name != name {
+			continue
+		}
+		vars, ok := service.Attrs.Vars.(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected variables on %s, got %v", name, service.Attrs.Vars)
+		}
+		return vars
+	}
+
+	t.Fatalf("service %s not found", name)
+	return nil
 }

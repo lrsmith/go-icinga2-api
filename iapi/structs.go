@@ -22,7 +22,7 @@ type ServiceStruct struct {
 
 type ServiceAttrs struct {
 	CheckCommand string      `json:"check_command"`
-	Templates    []string    `json:"templates"`
+	Templates    []string    `json:"templates,omitempty"`
 	Vars         interface{} `json:"vars"`
 	//	CheckInterval float64       `json:"check_interval"`
 	//	DisplayName   string        `json:"display_name"`
@@ -43,7 +43,7 @@ type CheckcommandStruct struct {
 type CheckcommandAttrs struct {
 	Arguments interface{} `json:"arguments"`
 	Command   []string    `json:"command"`
-	Templates []string    `json:"templates"`
+	Templates []string    `json:"templates,omitempty"`
 	//	Env       interface{} `json:"env"`   				// Available to be set but not supported yet
 	//	Package   string      `json:"package"`   		// Available to be set but not supported yet
 	//	Timeout   float64     `json:"timeout"`   		// Available to be set but not supported yet
@@ -167,7 +167,7 @@ type NotificationAttrs struct {
 	Servicename string      `json:"service_name"`
 	Interval    int         `json:"interval"`
 	Vars        interface{} `json:"vars"`
-	Templates   []string    `json:"templates"`
+	Templates   []string    `json:"templates,omitempty"`
 }
 
 // DowntimeScheduleRequest Create the API request to schedule a downtime

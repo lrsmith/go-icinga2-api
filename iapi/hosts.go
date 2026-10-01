@@ -24,29 +24,54 @@ func (server *Server) GetHost(ctx context.Context, hostname string) ([]HostStruc
 	return hosts, nil
 }
 
+// hostCreateRequest is the payload of a host creation. Attributes are addressed
+// by path, which is what makes "vars.os" merge with the variables inherited from
+// the templates where a whole "vars" dictionary would replace them.
+type hostCreateRequest struct {
+	Name      string                 `json:"name"`
+	Type      string                 `json:"type"`
+	Attrs     map[string]interface{} `json:"attrs"`
+	Templates []string               `json:"templates,omitempty"`
+}
+
 // CreateHost creates a host.
+// The keys of variables are variable names, without the "vars." prefix.
 // When a context deadline is exceeded, wait for the host to be created if a number of tries is defined.
 func (server *Server) CreateHost(ctx context.Context, hostname, address, address6 string, checkCommand string, variables map[string]interface{}, templates []string, groups []string, zone string) (hosts []HostStruct, err error) {
-	var newAttrs HostAttrs
-	newAttrs.Address = address
-	newAttrs.Address6 = address6
-	newAttrs.CheckCommand = checkCommand
-	newAttrs.Vars = variables
-	newAttrs.Templates = templates
-	newAttrs.Zone = zone
-
-	if groups == nil {
-		groups = []string{}
+	// Only send the attributes the caller provided, an empty one would override
+	// the value inherited from the templates.
+	attrs := make(map[string]interface{})
+	if address != "" {
+		attrs["address"] = address
 	}
-	newAttrs.Groups = groups
+	if address6 != "" {
+		attrs["address6"] = address6
+	}
+	if checkCommand != "" {
+		attrs["check_command"] = checkCommand
+	}
+	if zone != "" {
+		attrs["zone"] = zone
+	}
+	if groups != nil {
+		attrs["groups"] = groups
+	}
 
-	var newHost HostStruct
-	newHost.Name = hostname
-	newHost.Type = "Host"
-	newHost.Attrs = newAttrs
+	// Addressing each variable merges them with the ones inherited from the
+	// templates, assigning the whole "vars" dictionary would replace them.
+	for name, value := range variables {
+		attrs["vars."+name] = value
+	}
 
 	// Create JSON from completed struct
-	payloadJSON, marshalErr := json.Marshal(newHost)
+	payloadJSON, marshalErr := json.Marshal(hostCreateRequest{
+		Name:  hostname,
+		Type:  "Host",
+		Attrs: attrs,
+		// Templates are imports rather than an attribute. Icinga stores an
+		// "attrs.templates" array on the object verbatim and imports nothing.
+		Templates: templates,
+	})
 	if marshalErr != nil {
 		return nil, marshalErr
 	}
@@ -67,7 +92,7 @@ func (server *Server) CreateHost(ctx context.Context, hostname, address, address
 
 	// Detect real errors
 	if err == nil && results.Code != 200 {
-		return nil, fmt.Errorf("%s", results.ErrorString)
+		return nil, objectCreateError(results)
 	}
 
 	// Wait for the host to be created
@@ -115,17 +140,8 @@ func (server *Server) UpdateHost(ctx context.Context, name string, attrs HostAtt
 		return nil, fmt.Errorf("expected %d, got %d", http.StatusOK, r.Code)
 	}
 
-	var results []HostUpdateResult
-	if len(r.Results) > 0 {
-		if unmarshalErr := json.Unmarshal(r.Results, &results); unmarshalErr != nil {
-			return nil, fmt.Errorf("failed to unmarshal the host response: %v", unmarshalErr)
-		}
-	}
-
-	for _, result := range results {
-		if result.Code != http.StatusOK {
-			return nil, fmt.Errorf("%s", result.Status)
-		}
+	if updateErr := objectUpdateError(r); updateErr != nil {
+		return nil, updateErr
 	}
 
 	return server.GetHost(ctx, name)

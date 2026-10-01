@@ -149,3 +149,53 @@ func (server *Server) NewAPIRequest(ctx context.Context, method, APICall string,
 
 	return backoff.Retry(ctx, operation, backoff.WithBackOff(backoff.NewConstantBackOff(server.RetryDelay)), backoff.WithMaxTries(tries))
 }
+
+// objectCreateError reports the per object errors of a rejected creation, which
+// carry the reason, such as an unknown template, where the response status is a
+// bare "500 Internal Server Error".
+func objectCreateError(results *APIResult) error {
+	var objects []struct {
+		Errors []string `json:"errors"`
+	}
+
+	if unmarshalErr := json.Unmarshal(results.Results, &objects); unmarshalErr != nil {
+		return fmt.Errorf("%s", results.ErrorString)
+	}
+
+	var messages []string
+	for _, object := range objects {
+		messages = append(messages, object.Errors...)
+	}
+
+	if len(messages) == 0 {
+		return fmt.Errorf("%s", results.ErrorString)
+	}
+
+	return fmt.Errorf("%s", strings.Join(messages, "\n"))
+}
+
+// objectUpdateError reports the per object errors of an update. Icinga answers
+// 200 with a per object status, so a refused attribute is invisible in the
+// response code.
+func objectUpdateError(results *APIResult) error {
+	if len(results.Results) == 0 {
+		return nil
+	}
+
+	var objects []struct {
+		Code   float64 `json:"code"`
+		Status string  `json:"status"`
+	}
+
+	if unmarshalErr := json.Unmarshal(results.Results, &objects); unmarshalErr != nil {
+		return fmt.Errorf("failed to unmarshal the update response: %v", unmarshalErr)
+	}
+
+	for _, object := range objects {
+		if object.Code != http.StatusOK {
+			return fmt.Errorf("%s", strings.TrimSpace(object.Status))
+		}
+	}
+
+	return nil
+}

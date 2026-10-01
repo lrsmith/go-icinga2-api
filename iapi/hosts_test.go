@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -86,13 +88,21 @@ func TestCreateHostWithVariables(t *testing.T) {
 
 	variables := make(map[string]interface{})
 
-	variables["vars.os"] = "Linux"
-	variables["vars.creator"] = "Terraform"
-	variables["vars.urls"] = []string{"test-url1.example.com", "test-url2.example.com"}
+	variables["os"] = "Linux"
+	variables["creator"] = "Terraform"
+	variables["urls"] = []string{"test-url1.example.com", "test-url2.example.com"}
 
-	_, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, variables, nil, nil, "")
+	hosts, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, variables, nil, nil, "")
 	if err != nil {
 		t.Error(err)
+	}
+
+	vars := hostVars(t, hosts, hostname)
+	if vars["os"] != "Linux" {
+		t.Errorf("expected variable os to be Linux, got %v", vars["os"])
+	}
+	if vars["creator"] != "Terraform" {
+		t.Errorf("expected variable creator to be Terraform, got %v", vars["creator"])
 	}
 
 	// Delete host after creating it.
@@ -111,17 +121,88 @@ func TestCreateHostWithTemplates(t *testing.T) {
 	IPAddress := "127.0.0.3"
 	CheckCommand := "hostalive"
 
-	templates := []string{"template1", "template2"}
+	templates := []string{"go-icinga2-api-test-linux"}
 
-	_, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, nil, templates, nil, "")
+	hosts, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, nil, templates, nil, "")
 	if err != nil {
 		t.Error(err)
+	}
+
+	// Icinga resolves the imports of the imported templates too and reports the
+	// host itself first
+	expected := []string{hostname, "go-icinga2-api-test-linux", "generic-host"}
+	for _, host := range hosts {
+		if host.Name != hostname {
+			continue
+		}
+		if !slices.Equal(host.Attrs.Templates, expected) {
+			t.Errorf("expected templates %v, got %v", expected, host.Attrs.Templates)
+		}
+	}
+
+	// A variable of the template only reaches the host when the template is
+	// imported instead of being stored as an attribute
+	if vars := hostVars(t, hosts, hostname); vars["os"] != "Linux" {
+		t.Errorf("expected variable os to be inherited from the template, got %v", vars["os"])
 	}
 
 	// Delete host after creating it.
 	deleteErr := Icinga2_Server.DeleteHost(context.Background(), hostname)
 	if deleteErr != nil {
 		t.Error(deleteErr)
+	}
+}
+
+func TestCreateHostWithTemplatesAndVariables(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+
+	hostname := "go-icinga2-api-2"
+	IPAddress := "127.0.0.3"
+	CheckCommand := "hostalive"
+
+	templates := []string{"go-icinga2-api-test-linux"}
+	variables := map[string]interface{}{"role": "database"}
+
+	hosts, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, variables, templates, nil, "")
+	if err != nil {
+		t.Error(err)
+	}
+
+	vars := hostVars(t, hosts, hostname)
+	if vars["role"] != "database" {
+		t.Errorf("expected variable role to be database, got %v", vars["role"])
+	}
+	if vars["os"] != "Linux" {
+		t.Errorf("expected variable os to be inherited from the template, got %v", vars["os"])
+	}
+
+	// Delete host after creating it.
+	deleteErr := Icinga2_Server.DeleteHost(context.Background(), hostname)
+	if deleteErr != nil {
+		t.Error(deleteErr)
+	}
+}
+
+func TestCreateHostWithUnknownTemplate(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+
+	hostname := "go-icinga2-api-unknown-template"
+	IPAddress := "127.0.0.3"
+	CheckCommand := "hostalive"
+
+	templates := []string{"go-icinga2-api-test-does-not-exist"}
+
+	_, err := Icinga2_Server.CreateHost(context.Background(), hostname, IPAddress, "", CheckCommand, nil, templates, nil, "")
+	if err == nil {
+		t.Fatalf("expected the creation of %s to be rejected", hostname)
+	}
+
+	if !strings.Contains(err.Error(), "Import references unknown template") {
+		t.Errorf("expected the reason of the rejection, got %s", err)
 	}
 }
 
@@ -422,4 +503,23 @@ func TestHostExistsNotFound(t *testing.T) {
 	if exists {
 		t.Error("host must not exist")
 	}
+}
+
+// hostVars returns the resolved variables of a host.
+func hostVars(t *testing.T, hosts []HostStruct, hostname string) map[string]interface{} {
+	t.Helper()
+
+	for _, host := range hosts {
+		if host.Name != hostname {
+			continue
+		}
+		vars, ok := host.Attrs.Vars.(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected variables on %s, got %v", hostname, host.Attrs.Vars)
+		}
+		return vars
+	}
+
+	t.Fatalf("host %s not found", hostname)
+	return nil
 }

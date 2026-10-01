@@ -2,6 +2,8 @@ package iapi
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"testing"
 )
 
@@ -156,6 +158,57 @@ func TestNotifications(t *testing.T) {
 				t.Error("expected error, got nil")
 			}
 		})
+
+		t.Run("WithTemplates", func(t *testing.T) {
+			hostname := "host"
+			notificationname := hostname + "!" + hostname + "-templated"
+			username := "user"
+			templates := []string{"go-icinga2-api-test-notification"}
+
+			_, _ = icingaServer.CreateUser(ctx, username, "user@example.com", nil)
+
+			// The command and the interval are left to the templates, which only
+			// works when they are imported instead of being stored as attributes
+			notifications, err := icingaServer.CreateNotification(ctx, notificationname, hostname, "", "", 0, []string{username}, nil, templates)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for _, notification := range notifications {
+				if notification.Name != notificationname {
+					continue
+				}
+				if !slices.Contains(notification.Attrs.Templates, templates[0]) {
+					t.Errorf("expected %s to import %s, got %v", notificationname, templates[0], notification.Attrs.Templates)
+				}
+				if notification.Attrs.Command != "mail-host-notification" {
+					t.Errorf("expected the command to be inherited from the template, got %q", notification.Attrs.Command)
+				}
+				if notification.Attrs.Interval != 900 {
+					t.Errorf("expected the interval to be inherited from the template, got %d", notification.Attrs.Interval)
+				}
+			}
+
+			err = icingaServer.DeleteNotification(ctx, notificationname)
+			if err != nil {
+				t.Error(err)
+			}
+		})
+
+		t.Run("WithUnknownTemplate", func(t *testing.T) {
+			hostname := "host"
+			notificationname := hostname + "!" + hostname + "-unknown-template"
+			templates := []string{"go-icinga2-api-test-does-not-exist"}
+
+			_, err := icingaServer.CreateNotification(ctx, notificationname, hostname, "mail-host-notification", "", 1800, nil, nil, templates)
+			if err == nil {
+				t.Fatalf("expected the creation of %s to be rejected", notificationname)
+			}
+
+			if !strings.Contains(err.Error(), "Import references unknown template") {
+				t.Errorf("expected the reason of the rejection, got %s", err)
+			}
+		})
 	})
 
 	t.Run("Update", func(t *testing.T) {
@@ -169,9 +222,43 @@ func TestNotifications(t *testing.T) {
 					"vars.custom_field": "updated",
 				},
 			}
-			_, err := icingaServer.UpdateNotification(ctx, notificationname, attrs)
+			notifications, err := icingaServer.UpdateNotification(ctx, notificationname, attrs)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
+			}
+
+			for _, notification := range notifications {
+				if notification.Name != notificationname {
+					continue
+				}
+				if notification.Attrs.Interval != 3600 {
+					t.Errorf("expected the interval to be updated to 3600, got %d", notification.Attrs.Interval)
+				}
+			}
+		})
+
+		// The service name and the templates of a notification are immutable,
+		// sending them along makes Icinga reject the whole update
+		t.Run("HostNotificationWithImmutableAttrs", func(t *testing.T) {
+			hostname := "host"
+			notificationname := hostname + "!" + hostname
+			attrs := NotificationAttrs{
+				Command:   "mail-host-notification",
+				Interval:  7200,
+				Templates: []string{"mail-host-notification"},
+			}
+			notifications, err := icingaServer.UpdateNotification(ctx, notificationname, attrs)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for _, notification := range notifications {
+				if notification.Name != notificationname {
+					continue
+				}
+				if notification.Attrs.Interval != 7200 {
+					t.Errorf("expected the interval to be updated to 7200, got %d", notification.Attrs.Interval)
+				}
 			}
 		})
 	})

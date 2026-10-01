@@ -17,18 +17,37 @@ func (server *Server) GetService(ctx context.Context, servicename, hostname stri
 	return services, nil
 }
 
-// CreateService ...
-func (server *Server) CreateService(ctx context.Context, servicename, hostname, checkCommand string, variables map[string]string, templates []string) ([]ServiceStruct, error) {
-	var newAttrs ServiceAttrs
-	newAttrs.CheckCommand = checkCommand
-	newAttrs.Vars = variables
-	newAttrs.Templates = templates
+// serviceCreateRequest is the payload of a service creation. Attributes are
+// addressed by path, which is what makes "vars.os" merge with the variables
+// inherited from the templates where a whole "vars" dictionary would replace them.
+type serviceCreateRequest struct {
+	Attrs     map[string]interface{} `json:"attrs"`
+	Templates []string               `json:"templates,omitempty"`
+}
 
-	var newService ServiceStruct
-	newService.Attrs = newAttrs
+// CreateService creates a service.
+// The keys of variables are variable names, without the "vars." prefix.
+func (server *Server) CreateService(ctx context.Context, servicename, hostname, checkCommand string, variables map[string]string, templates []string) ([]ServiceStruct, error) {
+	// Only send the attributes the caller provided, an empty one would override
+	// the value inherited from the templates.
+	attrs := make(map[string]interface{})
+	if checkCommand != "" {
+		attrs["check_command"] = checkCommand
+	}
+
+	// Addressing each variable merges them with the ones inherited from the
+	// templates, assigning the whole "vars" dictionary would replace them.
+	for name, value := range variables {
+		attrs["vars."+name] = value
+	}
 
 	// Create JSON from completed struct
-	payloadJSON, marshalErr := json.Marshal(newService)
+	payloadJSON, marshalErr := json.Marshal(serviceCreateRequest{
+		Attrs: attrs,
+		// Templates are imports rather than an attribute. Icinga stores an
+		// "attrs.templates" array on the object verbatim and imports nothing.
+		Templates: templates,
+	})
 	if marshalErr != nil {
 		return nil, marshalErr
 	}
@@ -43,7 +62,7 @@ func (server *Server) CreateService(ctx context.Context, servicename, hostname, 
 		return server.GetService(ctx, servicename, hostname)
 	}
 
-	return nil, fmt.Errorf("%s", results.ErrorString)
+	return nil, objectCreateError(results)
 }
 
 // UpdateService updates a Service with its attrs in-place
@@ -64,6 +83,10 @@ func (server *Server) UpdateService(ctx context.Context, servicename, hostname s
 
 	if r.Code != http.StatusOK {
 		return nil, fmt.Errorf("expected %d, got %d", http.StatusOK, r.Code)
+	}
+
+	if updateErr := objectUpdateError(r); updateErr != nil {
+		return nil, updateErr
 	}
 
 	return server.GetService(ctx, servicename, hostname)

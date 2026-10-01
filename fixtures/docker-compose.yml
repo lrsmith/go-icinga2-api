@@ -116,7 +116,7 @@ services:
       - 5665:5665
     volumes:
       - icinga2:/data
-      - ./icinga2.conf.d:/custom_data/custom.conf.d
+      - ./icinga2.conf.d:/data/etc/icinga2/conf.d/custom.conf.d
       - ./post-init-icinga2.sh:/config/post-init-icinga2.sh
 
   icingadb:

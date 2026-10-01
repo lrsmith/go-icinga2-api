@@ -17,19 +17,41 @@ func (server *Server) GetCheckcommand(ctx context.Context, name string) ([]Check
 	return checkcommands, nil
 }
 
-// CreateCheckcommand ...
-func (server *Server) CreateCheckcommand(ctx context.Context, name, command string, commandArguments map[string]string) ([]CheckcommandStruct, error) {
-	var newAttrs CheckcommandAttrs
-	newAttrs.Command = []string{command}
-	newAttrs.Arguments = commandArguments
+// checkcommandCreateRequest is the payload of a checkcommand creation.
+// Attributes are addressed by path, which is what makes "arguments.-I" merge
+// with the arguments inherited from the templates where a whole "arguments"
+// dictionary would replace them.
+type checkcommandCreateRequest struct {
+	Name      string                 `json:"name"`
+	Type      string                 `json:"type"`
+	Attrs     map[string]interface{} `json:"attrs"`
+	Templates []string               `json:"templates,omitempty"`
+}
 
-	var newCheckcommand CheckcommandStruct
-	newCheckcommand.Name = name
-	newCheckcommand.Type = "CheckCommand"
-	newCheckcommand.Attrs = newAttrs
+// CreateCheckcommand creates a checkcommand.
+func (server *Server) CreateCheckcommand(ctx context.Context, name, command string, commandArguments map[string]string, templates []string) ([]CheckcommandStruct, error) {
+	// Only send the attributes the caller provided, an empty one would override
+	// the value inherited from the templates.
+	attrs := make(map[string]interface{})
+	if command != "" {
+		attrs["command"] = []string{command}
+	}
+
+	// Addressing each argument merges them with the ones inherited from the
+	// templates, assigning the whole "arguments" dictionary would replace them.
+	for argument, value := range commandArguments {
+		attrs["arguments."+argument] = value
+	}
 
 	// Create JSON from completed struct
-	payloadJSON, marshalErr := json.Marshal(newCheckcommand)
+	payloadJSON, marshalErr := json.Marshal(checkcommandCreateRequest{
+		Name:  name,
+		Type:  "CheckCommand",
+		Attrs: attrs,
+		// Templates are imports rather than an attribute. Icinga stores an
+		// "attrs.templates" array on the object verbatim and imports nothing.
+		Templates: templates,
+	})
 	if marshalErr != nil {
 		return nil, marshalErr
 	}
@@ -44,7 +66,7 @@ func (server *Server) CreateCheckcommand(ctx context.Context, name, command stri
 		return server.GetCheckcommand(ctx, name)
 	}
 
-	return nil, fmt.Errorf("%s", results.ErrorString)
+	return nil, objectCreateError(results)
 }
 
 // UpdateCheckcommand updates a CheckCommand with its attrs in-place
@@ -65,6 +87,10 @@ func (server *Server) UpdateCheckcommand(ctx context.Context, name string, attrs
 
 	if r.Code != http.StatusOK {
 		return nil, fmt.Errorf("expected %d, got %d", http.StatusOK, r.Code)
+	}
+
+	if updateErr := objectUpdateError(r); updateErr != nil {
+		return nil, updateErr
 	}
 
 	return server.GetCheckcommand(ctx, name)
