@@ -2,8 +2,11 @@ package iapi
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"testing"
 
@@ -225,3 +228,41 @@ func TestGetStatusWithReloadAndExceededRetries(t *testing.T) {
 	}
 }
 
+const mockedBaseURL = "https://127.0.0.1:5665"
+
+// mockUpdate records the attributes sent to endpoint and answers like Icinga.
+func mockUpdate(t *testing.T, endpoint string, mergeVariables bool) (*Server, *map[string]interface{}) {
+	t.Helper()
+	sent := map[string]interface{}{}
+	mockTransport := httpmock.NewMockTransport()
+	mockTransport.RegisterResponder(http.MethodPost, mockedBaseURL+endpoint, func(req *http.Request) (*http.Response, error) {
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		var payload struct {
+			Attrs map[string]interface{} `json:"attrs"`
+		}
+		if err := json.Unmarshal(body, &payload); err != nil {
+			return nil, err
+		}
+		sent = payload.Attrs
+		return httpmock.NewStringResponse(http.StatusOK, `{"results":[{"code":200,"status":"Attributes updated."}]}`), nil
+	})
+	mockTransport.RegisterResponder(http.MethodGet, mockedBaseURL+endpoint, httpmock.NewStringResponder(http.StatusOK, `{"results":[]}`))
+
+	server, err := New("user", "password", mockedBaseURL, true, "", 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+	server.httpClient.Transport = mockTransport
+	server.MergeVariables = mergeVariables
+	return server, &sent
+}
+
+func assertSent(t *testing.T, sent, expected map[string]interface{}) {
+	t.Helper()
+	if !reflect.DeepEqual(sent, expected) {
+		t.Errorf("expected attributes %v, got %v", expected, sent)
+	}
+}

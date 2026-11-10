@@ -92,9 +92,7 @@ func (server *Server) UpdateNotification(ctx context.Context, name string, attrs
 	if attrs.Interval != 0 {
 		payload["interval"] = attrs.Interval
 	}
-	if attrs.Vars != nil {
-		payload["vars"] = attrs.Vars
-	}
+	server.addVariables(payload, attrs.Vars)
 
 	body, err := json.Marshal(map[string]interface{}{"attrs": payload})
 	if err != nil {

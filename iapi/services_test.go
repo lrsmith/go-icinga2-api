@@ -156,7 +156,7 @@ func TestServices(t *testing.T) {
 			attrs := ServiceAttrs{
 				CheckCommand: "nrpe",
 				Vars: map[string]string{
-					"vars.nrpe_command": "check_updated",
+					"nrpe_command": "check_updated",
 				},
 			}
 			_, err := icingaServer.UpdateService(ctx, servicename, testHostName, attrs)
@@ -249,4 +249,21 @@ func serviceVars(t *testing.T, services []ServiceStruct, name string) map[string
 
 	t.Fatalf("service %s not found", name)
 	return nil
+}
+
+func TestUpdateServiceAddressesVariables(t *testing.T) {
+	server, sent := mockUpdate(t, "/objects/services/web!ssh", true)
+
+	_, err := server.UpdateService(context.Background(), "ssh", "web", ServiceAttrs{
+		CheckCommand: "ssh",
+		Vars:         map[string]string{"port": "22"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertSent(t, *sent, map[string]interface{}{
+		"check_command": "ssh",
+		"vars.port":     "22",
+	})
 }

@@ -27,7 +27,13 @@ type Server struct {
 	CACertFile         string
 	Tries              int
 	RetryDelay         time.Duration
-	httpClient         *http.Client
+	// MergeVariables makes host, service and notification updates set each
+	// variable by name, keeping the ones inherited from templates, and a nil
+	// value clears a variable since Icinga cannot remove one. When false, the
+	// whole "vars" dictionary is replaced and inherited variables are dropped.
+	// It will be enabled by default in a future release.
+	MergeVariables bool
+	httpClient     *http.Client
 }
 
 func buildHttpClient(allowUnverifiedSSL bool, caCertFile string) (*http.Client, error) {
@@ -57,7 +63,16 @@ func New(username, password, url string, allowUnverifiedSSL bool, caCertFile str
 	if err != nil {
 		return nil, err
 	}
-	return &Server{username, password, url, allowUnverifiedSSL, caCertFile, tries, retryDelay, client}, nil
+	return &Server{
+		Username:           username,
+		Password:           password,
+		BaseURL:            url,
+		AllowUnverifiedSSL: allowUnverifiedSSL,
+		CACertFile:         caCertFile,
+		Tries:              tries,
+		RetryDelay:         retryDelay,
+		httpClient:         client,
+	}, nil
 }
 
 func (server *Server) Config(username, password, url string, allowUnverifiedSSL bool, caCertFile string, tries int, retryDelay time.Duration) (*Server, error) {
@@ -65,7 +80,16 @@ func (server *Server) Config(username, password, url string, allowUnverifiedSSL 
 	if err != nil {
 		return nil, err
 	}
-	return &Server{username, password, url, allowUnverifiedSSL, caCertFile, tries, retryDelay, client}, nil
+	return &Server{
+		Username:           username,
+		Password:           password,
+		BaseURL:            url,
+		AllowUnverifiedSSL: allowUnverifiedSSL,
+		CACertFile:         caCertFile,
+		Tries:              tries,
+		RetryDelay:         retryDelay,
+		httpClient:         client,
+	}, nil
 }
 
 func (server *Server) doRequest(ctx context.Context, method, fullURL string, body io.Reader) (*http.Response, error) {
@@ -198,4 +222,49 @@ func objectUpdateError(results *APIResult) error {
 	}
 
 	return nil
+}
+
+func (server *Server) objectBackOffOptions() []backoff.RetryOption {
+	// Number of tries must be at least 1 to avoid infinite loop
+	tries := uint(math.Max(float64(server.Tries), 1.0))
+	return []backoff.RetryOption{
+		backoff.WithBackOff(backoff.NewConstantBackOff(server.RetryDelay)),
+		backoff.WithMaxTries(tries),
+	}
+}
+
+// addVariables sets the variables of an update. With MergeVariables, each one is
+// addressed by path so that it merges with the ones inherited from the templates,
+// assigning the whole "vars" dictionary would replace them. A nil value then
+// clears a variable, Icinga cannot remove one.
+func (server *Server) addVariables(attrs map[string]interface{}, vars interface{}) {
+	if vars == nil {
+		return
+	}
+
+	if !server.MergeVariables {
+		attrs["vars"] = vars
+		return
+	}
+
+	switch v := vars.(type) {
+	case map[string]string:
+		for name, value := range v {
+			attrs["vars."+name] = value
+		}
+	case map[string]interface{}:
+		for name, value := range v {
+			attrs["vars."+name] = value
+		}
+	default:
+		attrs["vars"] = vars
+	}
+}
+
+// addString sends an attribute only when it is set, an empty one would override
+// the value inherited from the templates.
+func addString(attrs map[string]interface{}, name, value string) {
+	if value != "" {
+		attrs[name] = value
+	}
 }
