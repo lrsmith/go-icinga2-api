@@ -199,3 +199,12 @@ func objectUpdateError(results *APIResult) error {
 
 	return nil
 }
+
+func (server *Server) objectBackOffOptions() []backoff.RetryOption {
+	// Number of tries must be at least 1 to avoid infinite loop
+	tries := uint(math.Max(float64(server.Tries), 1.0))
+	return []backoff.RetryOption{
+		backoff.WithBackOff(backoff.NewConstantBackOff(server.RetryDelay)),
+		backoff.WithMaxTries(tries),
+	}
+}

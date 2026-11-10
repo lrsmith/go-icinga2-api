@@ -2,7 +2,12 @@ package iapi
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"net/url"
 	"testing"
+
+	"github.com/jarcoal/httpmock"
 )
 
 func TestHostgroups(t *testing.T) {
@@ -137,4 +142,99 @@ func TestHostgroups(t *testing.T) {
 			}
 		})
 	})
+}
+
+func newMockedHostgroupServer(t *testing.T, tries int) (*Server, *httpmock.MockTransport) {
+	t.Helper()
+	mockTransport := httpmock.NewMockTransport()
+	server, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, "https://127.0.0.1:5665", ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", tries, 0)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+	server.httpClient.Transport = mockTransport
+	return server, mockTransport
+}
+
+func hostgroupURL(name string) string {
+	return fmt.Sprintf("https://127.0.0.1:5665/objects/hostgroups/%s", url.PathEscape(name))
+}
+
+func hostgroupResponse(name string) *http.Response {
+	return httpmock.NewStringResponse(http.StatusOK, fmt.Sprintf(`{"results":[{"type":"HostGroup","name":"%s","attrs":{"display_name":"%s"}}]}`, name, name))
+}
+
+func hostgroupNotFoundResponse() *http.Response {
+	return httpmock.NewStringResponse(http.StatusNotFound, `{"error":404,"status":"No objects found."}`)
+}
+
+func assertCallCount(t *testing.T, mockTransport *httpmock.MockTransport, method, endpoint string, expected int) {
+	t.Helper()
+	key := fmt.Sprintf("%s %s", method, endpoint)
+	if calls := mockTransport.GetCallCountInfo()[key]; calls != expected {
+		t.Errorf("expected %d calls to '%s', got %d", expected, key, calls)
+	}
+}
+
+func TestCreateHostgroupWithDeadlineExceeded(t *testing.T) {
+	name := "go-icinga2-api-hostgroup-1"
+	server, mockTransport := newMockedHostgroupServer(t, 0)
+	mockTransport.RegisterResponder(http.MethodPut, hostgroupURL(name), httpmock.NewErrorResponder(context.DeadlineExceeded))
+	mockTransport.RegisterResponder(http.MethodGet, hostgroupURL(name), func(*http.Request) (*http.Response, error) {
+		return hostgroupNotFoundResponse(), nil
+	})
+
+	if _, err := server.CreateHostgroup(context.Background(), name, name, ""); err == nil {
+		t.Errorf("expected an error when the host group is never created, got nil")
+	}
+}
+
+func TestCreateHostgroupWithDeadlineExceededAndRetries(t *testing.T) {
+	name := "go-icinga2-api-hostgroup-2"
+	server, mockTransport := newMockedHostgroupServer(t, 2)
+	mockTransport.RegisterResponder(http.MethodPut, hostgroupURL(name), httpmock.NewErrorResponder(context.DeadlineExceeded))
+	mockTransport.RegisterResponder(http.MethodGet, hostgroupURL(name), httpmock.ResponderFromMultipleResponses(
+		[]*http.Response{hostgroupNotFoundResponse(), hostgroupResponse(name)},
+		t.Log,
+	))
+
+	hostgroups, err := server.CreateHostgroup(context.Background(), name, name, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(hostgroups) != 1 || hostgroups[0].Name != name {
+		t.Errorf("expected host group '%s', got %v", name, hostgroups)
+	}
+
+	assertCallCount(t, mockTransport, http.MethodPut, hostgroupURL(name), 1)
+	assertCallCount(t, mockTransport, http.MethodGet, hostgroupURL(name), 2)
+}
+
+func TestDeleteHostgroupWithDeadlineExceeded(t *testing.T) {
+	name := "go-icinga2-api-hostgroup-3"
+	server, mockTransport := newMockedHostgroupServer(t, 0)
+	mockTransport.RegisterResponder(http.MethodDelete, hostgroupURL(name), httpmock.NewErrorResponder(context.DeadlineExceeded))
+	mockTransport.RegisterResponder(http.MethodGet, hostgroupURL(name), func(*http.Request) (*http.Response, error) {
+		return hostgroupResponse(name), nil
+	})
+
+	if err := server.DeleteHostgroup(context.Background(), name); err == nil {
+		t.Errorf("expected an error when the host group is never deleted, got nil")
+	}
+}
+
+func TestDeleteHostgroupWithDeadlineExceededAndRetries(t *testing.T) {
+	name := "go-icinga2-api-hostgroup-4"
+	server, mockTransport := newMockedHostgroupServer(t, 2)
+	mockTransport.RegisterResponder(http.MethodDelete, hostgroupURL(name), httpmock.NewErrorResponder(context.DeadlineExceeded))
+	mockTransport.RegisterResponder(http.MethodGet, hostgroupURL(name), httpmock.ResponderFromMultipleResponses(
+		[]*http.Response{hostgroupResponse(name), hostgroupNotFoundResponse()},
+		t.Log,
+	))
+
+	if err := server.DeleteHostgroup(context.Background(), name); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	assertCallCount(t, mockTransport, http.MethodDelete, hostgroupURL(name), 1)
+	assertCallCount(t, mockTransport, http.MethodGet, hostgroupURL(name), 2)
 }

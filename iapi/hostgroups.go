@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/cenkalti/backoff/v5"
 )
 
 const hostgroupEndpoint = "/objects/hostgroups"
@@ -48,15 +50,30 @@ func (server *Server) CreateHostgroup(ctx context.Context, name, displayName, zo
 
 	endpoint := fmt.Sprintf("%v/%v", hostgroupEndpoint, name)
 	results, err := server.NewAPIRequest(ctx, http.MethodPut, endpoint, payloadJSON, nil)
-	if err != nil {
+
+	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		return nil, err
 	}
 
-	if results.Code == http.StatusOK {
-		return server.GetHostgroup(ctx, name)
+	if err == nil && results.Code != http.StatusOK {
+		return nil, objectCreateError(results)
 	}
 
-	return nil, fmt.Errorf("%s", results.ErrorString)
+	// Icinga may still create the host group after the deadline is exceeded
+	operation := func() ([]HostgroupStruct, error) {
+		hostgroups, err := server.GetHostgroup(ctx, name)
+		if err != nil {
+			return nil, backoff.Permanent(err)
+		}
+		for _, hostgroup := range hostgroups {
+			if hostgroup.Name == name {
+				return hostgroups, nil
+			}
+		}
+		return nil, fmt.Errorf("host group '%s' not found after creation", name)
+	}
+
+	return backoff.Retry(ctx, operation, server.objectBackOffOptions()...)
 }
 
 // UpdateHostgroup updates a HostGroup with its attrs.
@@ -99,15 +116,29 @@ func (server *Server) UpdateHostgroup(ctx context.Context, name string, attrs Ho
 func (server *Server) DeleteHostgroup(ctx context.Context, name string) error {
 	endpoint := fmt.Sprintf("%v/%v", hostgroupEndpoint, name)
 	results, err := server.NewAPIRequest(ctx, http.MethodDelete, endpoint, nil, nil)
-	if err != nil {
+
+	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		return err
 	}
 
-	if results.Code == http.StatusOK {
-		return nil
+	if err == nil && results.Code != http.StatusOK {
+		return fmt.Errorf("%s", results.ErrorString)
 	}
 
-	return fmt.Errorf("%s", results.ErrorString)
+	// Icinga may still delete the host group after the deadline is exceeded
+	operation := func() (struct{}, error) {
+		exists, err := server.HostgroupExists(ctx, name)
+		if err != nil {
+			return struct{}{}, backoff.Permanent(err)
+		}
+		if exists {
+			return struct{}{}, fmt.Errorf("host group '%s' still exists after deletion", name)
+		}
+		return struct{}{}, nil
+	}
+
+	_, err = backoff.Retry(ctx, operation, server.objectBackOffOptions()...)
+	return err
 }
 
 // HostgroupExists returns true if a HostGroup exists
