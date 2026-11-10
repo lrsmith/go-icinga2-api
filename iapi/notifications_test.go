@@ -219,7 +219,7 @@ func TestNotifications(t *testing.T) {
 				Command:  "mail-host-notification",
 				Interval: 3600,
 				Vars: map[string]string{
-					"vars.custom_field": "updated",
+					"custom_field": "updated",
 				},
 			}
 			notifications, err := icingaServer.UpdateNotification(ctx, notificationname, attrs)
@@ -318,5 +318,22 @@ func TestNotifications(t *testing.T) {
 				t.Error(err)
 			}
 		})
+	})
+}
+
+func TestUpdateNotificationAddressesVariables(t *testing.T) {
+	server, sent := mockUpdate(t, "/objects/notifications/web!web", true)
+
+	_, err := server.UpdateNotification(context.Background(), "web!web", NotificationAttrs{
+		Command: "mail-host-notification",
+		Vars:    map[string]string{"team": "dba"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertSent(t, *sent, map[string]interface{}{
+		"command":   "mail-host-notification",
+		"vars.team": "dba",
 	})
 }

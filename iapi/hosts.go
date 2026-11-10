@@ -120,13 +120,27 @@ func (server *Server) CreateHost(ctx context.Context, hostname, address, address
 	)
 }
 
-// UpdateHost updates a Host with its attrs
+// UpdateHost updates a Host with its attrs.
+// Empty attributes are left untouched, see MergeVariables for the variables.
 func (server *Server) UpdateHost(ctx context.Context, name string, attrs HostAttrs) ([]HostStruct, error) {
-	host := HostStruct{
-		Attrs: attrs,
+	payload := make(map[string]interface{})
+	addString(payload, "action_url", attrs.ActionURL)
+	addString(payload, "address", attrs.Address)
+	addString(payload, "address6", attrs.Address6)
+	addString(payload, "check_command", attrs.CheckCommand)
+	addString(payload, "display_name", attrs.DisplayName)
+	addString(payload, "notes", attrs.Notes)
+	addString(payload, "notes_url", attrs.NotesURL)
+	addString(payload, "zone", attrs.Zone)
+	if attrs.Groups != nil {
+		payload["groups"] = attrs.Groups
 	}
+	if attrs.Templates != nil {
+		payload["templates"] = attrs.Templates
+	}
+	server.addVariables(payload, attrs.Vars)
 
-	body, err := json.Marshal(host)
+	body, err := json.Marshal(map[string]interface{}{"attrs": payload})
 	if err != nil {
 		return nil, err
 	}

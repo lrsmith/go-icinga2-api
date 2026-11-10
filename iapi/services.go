@@ -67,11 +67,14 @@ func (server *Server) CreateService(ctx context.Context, servicename, hostname, 
 
 // UpdateService updates a Service with its attrs in-place
 func (server *Server) UpdateService(ctx context.Context, servicename, hostname string, attrs ServiceAttrs) ([]ServiceStruct, error) {
-	service := ServiceStruct{
-		Attrs: attrs,
+	payload := make(map[string]interface{})
+	addString(payload, "check_command", attrs.CheckCommand)
+	if attrs.Templates != nil {
+		payload["templates"] = attrs.Templates
 	}
+	server.addVariables(payload, attrs.Vars)
 
-	body, err := json.Marshal(service)
+	body, err := json.Marshal(map[string]interface{}{"attrs": payload})
 	if err != nil {
 		return nil, err
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -522,4 +523,77 @@ func hostVars(t *testing.T, hosts []HostStruct, hostname string) map[string]inte
 
 	t.Fatalf("host %s not found", hostname)
 	return nil
+}
+
+func TestUpdateHostKeepsInheritedAttributes(t *testing.T) {
+	if ICINGA2_API_URL == "" {
+		t.Skip("ICINGA2_API_URL must be set for integration tests")
+	}
+	server, err := New(ICINGA2_API_USER, ICINGA2_API_PASSWORD, ICINGA2_API_URL, ICINGA2_INSECURE_SKIP_TLS_VERIFY, "", 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+	server.MergeVariables = true
+	ctx := context.Background()
+	hostname := "go-icinga2-api-update-inherited"
+
+	_, err = server.CreateHost(ctx, hostname, "127.0.0.10", "", "hostalive", map[string]interface{}{"owner": "dba", "removed": "yes"}, []string{"go-icinga2-api-test-linux"}, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer server.DeleteHost(ctx, hostname)
+
+	hosts, err := server.UpdateHost(ctx, hostname, HostAttrs{
+		Address: "127.0.0.11",
+		Vars:    map[string]interface{}{"owner": "ops", "removed": nil},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	vars := hostVars(t, hosts, hostname)
+	expected := map[string]interface{}{"os": "Linux", "owner": "ops", "removed": nil}
+	if !reflect.DeepEqual(vars, expected) {
+		t.Errorf("expected variables %v, got %v", expected, vars)
+	}
+	if hosts[0].Attrs.Address != "127.0.0.11" {
+		t.Errorf("expected address to be updated, got %s", hosts[0].Attrs.Address)
+	}
+}
+
+func TestUpdateHostSendsOnlyProvidedAttributes(t *testing.T) {
+	server, sent := mockUpdate(t, "/objects/hosts/web", true)
+
+	_, err := server.UpdateHost(context.Background(), "web", HostAttrs{
+		Address:      "127.0.0.1",
+		CheckCommand: "hostalive",
+		Vars:         map[string]interface{}{"os": "Linux", "removed": nil},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertSent(t, *sent, map[string]interface{}{
+		"address":       "127.0.0.1",
+		"check_command": "hostalive",
+		"vars.os":       "Linux",
+		"vars.removed":  nil,
+	})
+}
+
+func TestUpdateHostReplacesVariablesByDefault(t *testing.T) {
+	server, sent := mockUpdate(t, "/objects/hosts/web", false)
+
+	_, err := server.UpdateHost(context.Background(), "web", HostAttrs{
+		Address: "127.0.0.1",
+		Vars:    map[string]interface{}{"os": "Linux"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertSent(t, *sent, map[string]interface{}{
+		"address": "127.0.0.1",
+		"vars":    map[string]interface{}{"os": "Linux"},
+	})
 }
